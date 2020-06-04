@@ -93,6 +93,7 @@ namespace platform {
                 float load            = 0;
                 float voltage         = 10;
                 float temperature     = 40;
+                float current         = 0;
             };
 
             /// @brief Our state for our CM740 for variables we send to it

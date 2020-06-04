@@ -35,7 +35,7 @@ public:
      * @brief This enum holds the addresses of the various bytes in the MX28.
      *
      * @details
-     *  for additional details see http://support.robotis.com/en/product/dynamixel/mx_series/mx-28.htm
+     *  for additional details see http://web.archive.org/web/20160424081431/http://support.robotis.com:80/en/product/dynamixel/mx_series/mx-28.htm
      */
     enum Address {
         MODEL_NUMBER_L         = 0,
@@ -105,7 +105,8 @@ public:
         I_ERROR_OUT_L          = 64,
         I_ERROR_OUT_H          = 65,
         D_ERROR_OUT_L          = 66,
-        D_ERROR_OUT_H          = 67
+        D_ERROR_OUT_H          = 67,
+        CURRENT                = 68
     };
 
     MX28(UART& coms, int id);

@@ -40,6 +40,12 @@ namespace platform {
             return value * VOLTAGE_CONVERSION_FACTOR;
         }
 
+        float Convert::current(const uint16_t value) {
+            // I = ( 4.5mA ) * (CURRENT – 2048)
+            // http://emanual.robotis.com/docs/en/dxl/mx/mx-64/#current
+            return 4.5 * (value - 2048) * CURRENT_CONVERSION_FACTOR;
+        }
+
         float Convert::fsrForce(const uint16_t value) {
             return value * FSR_FORCE_CONVERSION_FACTOR;
         }

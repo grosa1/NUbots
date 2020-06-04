@@ -60,6 +60,12 @@ namespace Types {
         uint16_t load;
         uint8_t voltage;
         uint8_t temperature;
+        uint8_t registered; // Unused, just added to get to current
+        uint8_t moving; // Unused, just added to get to current
+        uint8_t lock; // Unused, just added to get to current
+        uint16_t punch; // Unused, just added to get to current
+        uint16_t realtimeTick; // Unused, just added to get to current
+        uint16_t current;
     };
 
     /**

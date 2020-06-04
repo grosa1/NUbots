@@ -118,7 +118,7 @@ void Darwin::buildBulkReadPacket() {
                   "The CM740 type is the wrong size");
 
     // Double check that our type is big enough to hold the result
-    static_assert(sizeof(Types::MX28Data) == MX28::Address::PRESENT_TEMPERATURE - MX28::Address::PRESENT_POSITION_L + 1,
+    static_assert(sizeof(Types::MX28Data) == MX28::Address::CURRENT - MX28::Address::PRESENT_POSITION_L + 1,
                   "The MX28 type is the wrong size");
 
     // Double check that our type is big enough to hold the result
@@ -263,6 +263,12 @@ BulkReadResults Darwin::bulkRead() {
                 data.servos[r.header.id - 1].load            = 0xFF;
                 data.servos[r.header.id - 1].voltage         = 0xFF;
                 data.servos[r.header.id - 1].temperature     = 0xFF;
+                data.servos[r.header.id - 1].registered      = 0xFF;
+                data.servos[r.header.id - 1].moving          = 0xFF;
+                data.servos[r.header.id - 1].lock            = 0xFF;
+                data.servos[r.header.id - 1].punch           = 0xFFFF;
+                data.servos[r.header.id - 1].realtimeTick    = 0xFFFF;
+                data.servos[r.header.id - 1].current         = 0xFFFF;
                 data.servoErrorCodes[r.header.id - 1]        = r.header.errorcode;
             }
 

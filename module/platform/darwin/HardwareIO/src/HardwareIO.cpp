@@ -181,6 +181,7 @@ namespace platform {
                     servo.load            = servoState[i].load;
                     servo.voltage         = servoState[i].voltage;
                     servo.temperature     = servoState[i].temperature;
+                    servo.current         = servoState[i].current;
                 }
 
                 // If we are using real data, get it from the packet
@@ -198,6 +199,7 @@ namespace platform {
                     // Diagnostic Information
                     servo.voltage     = Convert::voltage(data.servos[i].voltage);
                     servo.temperature = Convert::temperature(data.servos[i].temperature);
+                    servo.current     = Convert::current(data.servos[i].current);
 
                     // Clear Overvoltage flag if current voltage is greater than maximum expected voltage
                     if (servo.voltage <= chargedVoltage) {
