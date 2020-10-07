@@ -77,6 +77,9 @@ RUN ln -s /usr/local/bin/install-from-source /usr/local/bin/install-header-from-
 COPY --chown=nubots:nubots usr/local/toolchain/generate_generic_toolchain.py /usr/local/generate_toolchain.py
 RUN sudo python /usr/local/generate_toolchain.py --prefix /usr
 
+#install sshpass for use in push, pull
+RUN install-package sshpass
+
 #############################################
 ### ADD NEW SYTEM PROGRAMS/LIBRARIES HERE ###
 #############################################
