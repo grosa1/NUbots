@@ -15,7 +15,7 @@ using utility::math::geometry::Quad;
 //These numbers are close to the maximum value a float can be represented
 static const std::array<std::vector<Eigen::Vector2f>, 6> points = {
     //Empty vector to test the domain error thrown by getBoundingBox()
-    std::vector<Eigen::Vector2f>(),
+    //std::vector<Eigen::Vector2f>(),
     //Eigen vector for all numbers to the power of positive 36
     std::vector<Eigen::Vector2f>{
         {1.616412146187743383e+36, 4.078547546635703034e+36},
@@ -285,14 +285,14 @@ static const std::array<std::vector<Eigen::Vector2f>, 6> points = {
 //unit test for getBoundingBox()
 //expect that this function has zero or positive inputs
 TEST_CASE("Test the Bounding Box Function", "[utility][math][geometry][quad]") {
-    //Make a Quad object,
-    //Vector2f will be turned into Matrix<float,2,1>
-    //Quad<Eigen::Vector2f> quad;
-    // test;
     INFO("Start of test case here");
-    for(const auto& pts : points)
+    INFO(points.size());
+    for(const auto&  pts : points)
     {
-        INFO(Quad::getBoundingBox(pts));
+        //INFO("Size of pts is");
+        INFO(pts.size());
+        //INFO("Quad object:");
+        //INFO(Quad<Eigen::Vector2f>::getBoundingBox(pts));
         for (const auto& p : pts) {
             INFO("The points are here");
             INFO(p);
