@@ -5,8 +5,8 @@
 #include <vector>
 #include <array>
 #include <catch.hpp>
-#include "utility/support/yaml_armadillo.h"
-#include <Utility/math/geometry/Quad.h>
+#include <float.h>
+#include "utility/math/geometry/Quad.hpp"
 
 using utility::math::geometry::Quad;
 
@@ -14,9 +14,6 @@ using utility::math::geometry::Quad;
 //Test suite/bed of points
 //These numbers are close to the maximum value a float can be represented
 static const std::array<std::vector<Eigen::Vector2f>, 6> points = {
-    //Empty vector to test the domain error thrown by getBoundingBox()
-    //std::vector<Eigen::Vector2f>(),
-    //Eigen vector for all numbers to the power of positive 36
     std::vector<Eigen::Vector2f>{
         {1.616412146187743383e+36, 4.078547546635703034e+36},
         {4.757728326494828274e+36, 6.934685291783180400e+36},
@@ -286,19 +283,19 @@ static const std::array<std::vector<Eigen::Vector2f>, 6> points = {
 //expect that this function has zero or positive inputs
 TEST_CASE("Test the Bounding Box Function", "[utility][math][geometry][quad]") {
     INFO("Start of test case here");
-    INFO(points.size());
+    INFO("The size of the std::array points is " << points.size());
     for(const auto&  pts : points)
     {
-        //INFO("Size of pts is");
-        INFO(pts.size());
-        //INFO("Quad object:");
-        //INFO(Quad<Eigen::Vector2f>::getBoundingBox(pts));
-        for (const auto& p : pts) {
-            INFO("The points are here");
-            INFO(p);
+        INFO("The size of the std::vectors are " << pts.size());
+        auto result = Quad::getBoundingBox(pts);
+        INFO("The Quad object generated using this std::vec is " << result);
+        for(const auto& v : pts)
+        {
+            INFO("The Eigen values are " << v);
+            REQUIRE(1==2);
         }
+        //REQUIRE(1==2);
     }
     INFO("End of test case here");
-    //require statments here
-    REQUIRE(1 == 2);
+    REQUIRE(5 == 6);
 }
