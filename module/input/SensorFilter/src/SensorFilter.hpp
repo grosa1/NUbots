@@ -60,12 +60,9 @@ namespace module::input {
                         Eigen::Matrix3d accelerometer;
                         Eigen::Matrix3d accelerometerMagnitude;
                         Eigen::Matrix3d gyroscope;
-                        Eigen::Matrix3d flatFootOdometry;
                         Eigen::Matrix4d flatFootOrientation;
                     } measurement;
                     struct Process {
-                        Eigen::Vector3d position;
-                        Eigen::Vector3d velocity;
                         Eigen::Vector4d rotation;
                         Eigen::Vector3d rotationalVelocity;
                         Eigen::Vector3d gyroscopeBias;
@@ -74,15 +71,11 @@ namespace module::input {
                 struct Initial {
                     Initial() : mean(), covariance() {}
                     struct Mean {
-                        Eigen::Vector3d position;
-                        Eigen::Vector3d velocity;
                         Eigen::Vector4d rotation;
                         Eigen::Vector3d rotationalVelocity;
                         Eigen::Vector3d gyroscopeBias;
                     } mean;
                     struct Covariance {
-                        Eigen::Vector3d position;
-                        Eigen::Vector3d velocity;
                         Eigen::Vector4d rotation;
                         Eigen::Vector3d rotationalVelocity;
                         Eigen::Vector3d gyroscopeBias;
