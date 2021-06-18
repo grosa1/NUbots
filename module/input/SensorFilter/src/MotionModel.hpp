@@ -52,7 +52,7 @@ namespace module::input {
             // Gyroscope Bias
             Eigen::Matrix<Scalar, 3, 1> omegaTTt_bias;
 
-            static constexpr size_t size = 9;
+            static constexpr size_t size = 10;
 
             constexpr static size_t getSize() {
                 return size;
@@ -84,12 +84,12 @@ namespace module::input {
 
             // Constructor from monolithic vector representation, normalising the quaternion in the process
             StateVec(const Eigen::Matrix<Scalar, size, 1>& state)
-                : Rwt(Eigen::Quaternion<Scalar>(state.template segment<4>(QX).normalized())
+                : Rwt(Eigen::Quaternion<Scalar>(state.template segment<4>(QX)).normalized())
                 , omegaTTt(state.template segment<3>(WX))
                 , omegaTTt_bias(state.template segment<3>(BX)) {}
 
             // Converts StateVec to monolithic vector representation
-            Eigen::Matrix<Scalar, size, 1> getStateVec() const {
+            [[nodiscard]] Eigen::Matrix<Scalar, size, 1> getStateVec() const {
                 Eigen::Matrix<Scalar, size, 1> state = Eigen::Matrix<Scalar, size, 1>::Zero();
                 state.template segment<4>(QX)        = Rwt.coeffs();
                 state.template segment<3>(WX)        = omegaTTt;
@@ -98,7 +98,7 @@ namespace module::input {
             }
 
             // Wrapper for asDiagonal for monolithic vector representation
-            Eigen::Matrix<Scalar, size, size> asDiagonal() const {
+            [[nodiscard]] Eigen::Matrix<Scalar, size, size> asDiagonal() const {
                 return this->getStateVec().asDiagonal();
             }
 
@@ -115,7 +115,8 @@ namespace module::input {
         // Our static process noise diagonal vector
         StateVec process_noise;
 
-        Eigen::Matrix<Scalar, size, 1> time(const Eigen::Matrix<Scalar, size, 1>& state, const Scalar deltaT) {
+        [[nodiscard]] static Eigen::Matrix<Scalar, size, 1> time(const Eigen::Matrix<Scalar, size, 1>& state,
+                                                                 const Scalar deltaT) {
 
             // Prepare our new state
             StateVec newState(state);
@@ -138,15 +139,15 @@ namespace module::input {
                                                                    0.0);
             const Eigen::Quaternion<Scalar> dq_dt = Eigen::Quaternion<Scalar>(half_omegaTTt_coeffs) * Rwt;
             // The change in the rotation is the derivative times the differential (which is the time-step)
-            const auto change = deltaT * Eigen::Matrix<Scalar, 4, 1>(dq_dt.x(), dq_dt.y(), dq_dt.z(), dq_dt.w());
+            const auto change = deltaT * dq_dt.coeffs();
             // We can add the change to the original as vectors, as long as our time step is small enough
             newState.Rwt = Eigen::Quaternion<Scalar>(Rwt.coeffs() + change).normalized();
 
             return newState;
         }
 
-        Eigen::Matrix<Scalar, 3, 1> predict(const Eigen::Matrix<Scalar, size, 1>& state,
-                                            const MeasurementType::ACCELEROMETER&) {
+        [[nodiscard]] static Eigen::Matrix<Scalar, 3, 1> predict(const Eigen::Matrix<Scalar, size, 1>& state,
+                                                                 const MeasurementType::ACCELEROMETER&) {
             // Extract our rotation quaternion
             const Eigen::Matrix<Scalar, 3, 3> Rtw = StateVec(state).Rwt.inverse().toRotationMatrix();
 
@@ -157,27 +158,27 @@ namespace module::input {
             return Rtw.template rightCols<1>() * G;
         }
 
-        Eigen::Matrix<Scalar, 3, 1> predict(const Eigen::Matrix<Scalar, size, 1>& state,
-                                            const MeasurementType::GYROSCOPE&) {
+        [[nodiscard]] static Eigen::Matrix<Scalar, 3, 1> predict(const Eigen::Matrix<Scalar, size, 1>& state,
+                                                                 const MeasurementType::GYROSCOPE&) {
             // Add predicted gyroscope bias to our predicted gyroscope
             return StateVec(state).omegaTTt + StateVec(state).omegaTTt_bias;
         }
 
-        Eigen::Matrix<Scalar, 4, 1> predict(const Eigen::Matrix<Scalar, size, 1>& state,
-                                            const MeasurementType::FLAT_FOOT_ORIENTATION&) {
+        [[nodiscard]] static Eigen::Matrix<Scalar, 4, 1> predict(const Eigen::Matrix<Scalar, size, 1>& state,
+                                                                 const MeasurementType::FLAT_FOOT_ORIENTATION&) {
             return Eigen::Matrix<Scalar, 4, 1>(state.template segment<4>(StateVec::QX));
         }
 
         // This function is called to determine the difference between position, velocity, and acceleration
         // measurements/predictions
-        Eigen::Matrix<Scalar, 3, 1> difference(const Eigen::Matrix<Scalar, 3, 1>& a,
-                                               const Eigen::Matrix<Scalar, 3, 1>& b) {
+        [[nodiscard]] static Eigen::Matrix<Scalar, 3, 1> difference(const Eigen::Matrix<Scalar, 3, 1>& a,
+                                                                    const Eigen::Matrix<Scalar, 3, 1>& b) {
             return a - b;
         }
 
         // This function is called to determine the difference between quaternion measurements/predictions
-        Eigen::Matrix<Scalar, 4, 1> difference(const Eigen::Matrix<Scalar, 4, 1>& a,
-                                               const Eigen::Matrix<Scalar, 4, 1>& b) {
+        [[nodiscard]] static Eigen::Matrix<Scalar, 4, 1> difference(const Eigen::Matrix<Scalar, 4, 1>& a,
+                                                                    const Eigen::Matrix<Scalar, 4, 1>& b) {
             // Find the rotation needed to get from orientation a to orientation b
             Eigen::Quaternion<Scalar> diff =
                 utility::math::quaternion::difference(Eigen::Quaternion<Scalar>(a), Eigen::Quaternion<Scalar>(b));
@@ -189,7 +190,7 @@ namespace module::input {
             return diff.coeffs();
         }
 
-        Eigen::Matrix<Scalar, size, 1> limit(const Eigen::Matrix<Scalar, size, 1>& state) {
+        [[nodiscard]] static Eigen::Matrix<Scalar, size, 1> limit(const Eigen::Matrix<Scalar, size, 1>& state) {
             StateVec newState(state);
 
             // Make sure the quaternion remains normalised
@@ -198,7 +199,7 @@ namespace module::input {
             return newState;
         }
 
-        Eigen::Matrix<Scalar, size, size> noise(const Scalar& deltaT) {
+        [[nodiscard]] Eigen::Matrix<Scalar, size, size> noise(const Scalar& deltaT) {
             // Return our process noise matrix
             return process_noise.asDiagonal() * deltaT;
         }
