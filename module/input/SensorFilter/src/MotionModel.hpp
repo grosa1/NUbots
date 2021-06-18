@@ -42,13 +42,6 @@ namespace module::input {
     class MotionModel {
     public:
         struct StateVec {
-
-            // Our position in global space
-            Eigen::Matrix<Scalar, 3, 1> rTWw;
-
-            // Our velocity in global space
-            Eigen::Matrix<Scalar, 3, 1> vTw;
-
             // Our orientation from robot to world
             Eigen::Quaternion<Scalar> Rwt;
 
@@ -59,62 +52,46 @@ namespace module::input {
             // Gyroscope Bias
             Eigen::Matrix<Scalar, 3, 1> omegaTTt_bias;
 
-            static constexpr size_t size = 16;
+            static constexpr size_t size = 9;
 
             constexpr static size_t getSize() {
                 return size;
             }
 
             enum Values {
-                // rTWw
-                PX = 0,
-                PY = 1,
-                PZ = 2,
-
-                // vTw
-                VX = 3,
-                VY = 4,
-                VZ = 5,
-
                 // Rwt
-                QW = 6,
-                QX = 7,
-                QY = 8,
-                QZ = 9,
+                QX = 0,
+                QY = 1,
+                QZ = 2,
+                QW = 3,
 
                 // omegaTTt
-                WX = 10,
-                WY = 11,
-                WZ = 12,
+                WX = 4,
+                WY = 5,
+                WZ = 6,
 
                 // omegaTTt_bias
-                BX = 13,
-                BY = 14,
-                BZ = 15,
+                BX = 7,
+                BY = 8,
+                BZ = 9,
             };
 
             // Default constructor initialises all vectors to zero, and the quaternion to the identity rotation
             StateVec()
-                : rTWw(Eigen::Matrix<Scalar, 3, 1>::Zero())
-                , vTw(Eigen::Matrix<Scalar, 3, 1>::Zero())
-                , Rwt({1, 0, 0, 0})
+                : Rwt(Eigen::Quaternion<Scalar>::Identity())
                 , omegaTTt(Eigen::Matrix<Scalar, 3, 1>::Zero())
                 , omegaTTt_bias(Eigen::Matrix<Scalar, 3, 1>::Zero()) {}
 
             // Constructor from monolithic vector representation, normalising the quaternion in the process
             StateVec(const Eigen::Matrix<Scalar, size, 1>& state)
-                : rTWw(state.template segment<3>(PX))
-                , vTw(state.template segment<3>(VX))
-                , Rwt(Eigen::Quaternion<Scalar>(state.template segment<4>(QW)).normalized())
+                : Rwt(Eigen::Quaternion<Scalar>(state.template segment<4>(QX).normalized())
                 , omegaTTt(state.template segment<3>(WX))
                 , omegaTTt_bias(state.template segment<3>(BX)) {}
 
             // Converts StateVec to monolithic vector representation
             Eigen::Matrix<Scalar, size, 1> getStateVec() const {
                 Eigen::Matrix<Scalar, size, 1> state = Eigen::Matrix<Scalar, size, 1>::Zero();
-                state.template segment<3>(PX)        = rTWw;
-                state.template segment<3>(VX)        = vTw;
-                state.template segment<4>(QW)        = Rwt.coeffs();
+                state.template segment<4>(QX)        = Rwt.coeffs();
                 state.template segment<3>(WX)        = omegaTTt;
                 state.template segment<3>(BX)        = omegaTTt_bias;
                 return state;
@@ -137,9 +114,6 @@ namespace module::input {
 
         // Our static process noise diagonal vector
         StateVec process_noise;
-
-        // The velocity decay for x/y/z velocities (1.0 = no decay)
-        Eigen::Matrix<Scalar, 3, 1> timeUpdateVelocityDecay = Eigen::Matrix<Scalar, 3, 1>::Ones();
 
         Eigen::Matrix<Scalar, size, 1> time(const Eigen::Matrix<Scalar, size, 1>& state, const Scalar deltaT) {
 
@@ -168,16 +142,6 @@ namespace module::input {
             // We can add the change to the original, as long as our time step is small enough
             newState.Rwt = Eigen::Quaternion<Scalar>(Rwt.coeffs() + change.coeffs()).normalized();
 
-            // ********************************
-            // UPDATE LINEAR POSITION/VELOCITY
-            // ********************************
-
-            // Add our velocity to our position
-            newState.rTWw += newState.vTw * deltaT;
-
-            // add velocity decay
-            newState.vTw = newState.vTw.cwiseProduct(timeUpdateVelocityDecay);
-
             return newState;
         }
 
@@ -197,11 +161,6 @@ namespace module::input {
                                             const MeasurementType::GYROSCOPE&) {
             // Add predicted gyroscope bias to our predicted gyroscope
             return StateVec(state).omegaTTt + StateVec(state).omegaTTt_bias;
-        }
-
-        Eigen::Matrix<Scalar, 3, 1> predict(const Eigen::Matrix<Scalar, size, 1>& state,
-                                            const MeasurementType::FLAT_FOOT_ODOMETRY&) {
-            return StateVec(state).rTWw;
         }
 
         Eigen::Matrix<Scalar, 4, 1> predict(const Eigen::Matrix<Scalar, size, 1>& state,
