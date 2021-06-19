@@ -62,7 +62,7 @@ TEST_CASE("Test MotionModel Orientation", "[module][input][SensorFilter][MotionM
     std::vector<Eigen::Quaterniond> quaternions;
 
     char comma;
-    std::ifstream ifs("tests/gyroscope_measurements_no_noise.txt");
+    std::ifstream ifs("/home/nubots/NUbots/module/input/SensorFilter/tests/gyroscope_measurements_no_noise.txt");
     while (ifs.good()) {
         Eigen::Vector3d gyro;
         ifs >> gyro.x() >> comma >> gyro.y() >> comma >> gyro.z();
@@ -71,7 +71,7 @@ TEST_CASE("Test MotionModel Orientation", "[module][input][SensorFilter][MotionM
         }
     }
     ifs.close();
-    ifs.open("tests/accelerometer_measurements_no_noise.txt");
+    ifs.open("/home/nubots/NUbots/module/input/SensorFilter/tests/accelerometer_measurements_no_noise.txt");
     while (ifs.good()) {
         Eigen::Vector3d acc;
         ifs >> acc.x() >> comma >> acc.y() >> comma >> acc.z();
@@ -80,16 +80,16 @@ TEST_CASE("Test MotionModel Orientation", "[module][input][SensorFilter][MotionM
         }
     }
     ifs.close();
-    ifs.open("tests/orientation.txt");
+    ifs.open("/home/nubots/NUbots/module/input/SensorFilter/tests/orientation.txt");
     while (ifs.good()) {
         Eigen::Matrix3d rot_mat;
         // clang-format off
         double _1_1, _1_2, _1_3,
                _2_1, _2_2, _2_3,
                _3_1, _3_2, _3_3;
-        ifs >> _1_1 >> comma >> _1_2 >> comma >> _1_3 >> comma
-            >> _2_1 >> comma >> _2_2 >> comma >> _2_3 >> comma
-            >> _3_1 >> comma >> _3_2 >> comma >> _3_3 >> comma;
+        ifs >> _1_1 >> comma >> _1_2 >> comma >> _1_3;
+        ifs >> _2_1 >> comma >> _2_2 >> comma >> _2_3;
+        ifs >> _3_1 >> comma >> _3_2 >> comma >> _3_3;
 
         rot_mat << _1_1 , _1_2 , _1_3,
                    _2_1 , _2_2 , _2_3,
@@ -102,7 +102,7 @@ TEST_CASE("Test MotionModel Orientation", "[module][input][SensorFilter][MotionM
     ifs.close();
 
     // Configure the motion model
-    YAML::Node config = YAML::LoadFile("config/SensorFilter.yaml");
+    YAML::Node config = YAML::LoadFile("/home/nubots/NUbots/module/input/SensorFilter/data/config/SensorFilter.yaml");
     // Set our process noise in our filter
     MotionModel<double>::StateVec process_noise;
     const auto& process         = config["motion_filter"]["noise"]["process"];
@@ -172,6 +172,7 @@ TEST_CASE("Test MotionModel Orientation", "[module][input][SensorFilter][MotionM
     std::vector<Eigen::Quaterniond> errors;
     std::vector<double> angular_errors;
 
+    INFO("The data has been read in. Quaternions.size() = " << quaternions.size())
     // Step through test data and get orientation predictions
     for (int i = 0; i < int(quaternions.size()); ++i) {
         // Perform the measurement update
@@ -266,9 +267,9 @@ TEST_CASE("Test MotionModel Orientation", "[module][input][SensorFilter][MotionM
         std::accumulate(angular_errors.begin(), angular_errors.end(), 0.0) / double(angular_errors.size());
     INFO("Mean Error........: " << mean_error.coeffs().transpose());
     INFO("Mean Angular Error: " << mean_angular_error);
-    REQUIRE(mean_error.w() == Approx(1.0));
-    REQUIRE(mean_error.x() == Approx(0.0));
-    REQUIRE(mean_error.y() == Approx(0.0));
-    REQUIRE(mean_error.z() == Approx(0.0));
+    REQUIRE(mean_error.w() == Approx(1.0).margin(0.01));
+    REQUIRE(mean_error.x() == Approx(0.0).margin(0.01));
+    REQUIRE(mean_error.y() == Approx(0.0).margin(0.01));
+    REQUIRE(mean_error.z() == Approx(0.0).margin(0.01));
     REQUIRE(mean_angular_error == Approx(0.0));
 }

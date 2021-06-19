@@ -57,7 +57,12 @@ namespace utility::math::quaternion {
         }
 
         // We want the eigenvector corresponding to the largest eigenvector
-        return QType(eigensolver.eigenvectors().template rightCols<1>());
+        auto tmp = QType(eigensolver.eigenvectors().template rightCols<1>());
+        if (tmp.w() < 0) {
+            tmp.w()   = -tmp.w();
+            tmp.vec() = -tmp.vec();
+        }
+        return tmp;
     }
 
     template <typename QType>
@@ -65,7 +70,12 @@ namespace utility::math::quaternion {
         // Difference between two rotations
         // Calculate the rotation from a to b
         // https://www.gamedev.net/forums/topic/423462-rotation-difference-between-two-quaternions/?do=findComment&comment=3818213
-        return a.inverse() * b;
+        auto tmp = a.inverse() * b;
+        if (tmp.w() < 0) {
+            tmp.w()   = -tmp.w();
+            tmp.vec() = -tmp.vec();
+        }
+        return tmp;
     }
 }  // namespace utility::math::quaternion
 

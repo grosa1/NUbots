@@ -142,7 +142,10 @@ namespace module::input {
             const auto change = deltaT * dq_dt.coeffs();
             // We can add the change to the original as vectors, as long as our time step is small enough
             newState.Rwt = Eigen::Quaternion<Scalar>(Rwt.coeffs() + change).normalized();
-
+            if (newState.Rwt.w() < 0) {
+                newState.Rwt.w()   = -newState.Rwt.w();
+                newState.Rwt.vec() = -newState.Rwt.vec();
+            }
             return newState;
         }
 
@@ -195,7 +198,10 @@ namespace module::input {
 
             // Make sure the quaternion remains normalised
             newState.Rwt = newState.Rwt.normalized();
-
+            if (newState.Rwt.w() < 0) {
+                newState.Rwt.w()   = -newState.Rwt.w();
+                newState.Rwt.vec() = -newState.Rwt.vec();
+            }
             return newState;
         }
 
