@@ -260,6 +260,9 @@ RUN /usr/local/package/espeak.sh https://github.com/espeak-ng/espeak-ng/releases
 # mio memory mapping library
 RUN install-from-source https://github.com/mandreyel/mio/archive/master.tar.gz
 
+# nonlinear constrained optimization library
+RUN install-from-source https://github.com/stevengj/nlopt/archive/v2.6.2.tar.gz
+
 # zstr header to have file streams that do zlib compression
 RUN mkdir -p /usr/local/include/zstr \
     && wget https://raw.githubusercontent.com/mateidavid/zstr/v1.0.4/src/zstr.hpp -O /usr/local/include/zstr.hpp \
