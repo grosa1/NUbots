@@ -308,6 +308,13 @@ namespace utility::motion::kinematics {
         hipYaw                      = (isHipYawPositive ? 1 : -1)
                  * std::acos(std::fmax(std::fmin(hipXProjected.dot(Eigen::Vector3f::UnitX()), 1), -1));
 
+        std::cout << "Hip yaw" << hipYaw << std::endl;
+        std::cout << "Hip roll" << hipRoll << std::endl;
+        std::cout << "Hip pitch" << hipPitch << std::endl;
+        std::cout << "Knee pitch" << knee << std::endl;
+        std::cout << "Ankle pitch" << anklePitch << std::endl;
+        std::cout << "Ankle Roll" << ankleRoll << std::endl;
+
         if (limb == LimbID::LEFT_LEG) {
             positions.push_back(std::make_pair(ServoID::L_HIP_YAW, -hipYaw));
             positions.push_back(std::make_pair(ServoID::L_HIP_ROLL, hipRoll));

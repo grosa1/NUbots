@@ -40,6 +40,9 @@
 
 namespace utility::motion::nloptinversekinematics {
 
+    using message::input::Sensors;
+    using message::motion::KinematicsModel;
+
     using utility::input::LimbID;
     using utility::input::ServoID;
 
@@ -55,8 +58,15 @@ namespace utility::motion::nloptinversekinematics {
 
     Eigen::Affine3d forwardKinematics(const std::vector<double>& q);
     double cost(const std::vector<double>& q, std::vector<double>& grad, void* data);
-    void inverseKinematics();
+    [[nodiscard]] std::vector<std::pair<ServoID, float>> inverseKinematics(
+        const message::motion::KinematicsModel& model,
+        const Eigen::Affine3d& target,
+        const LimbID& limb);
+    [[nodiscard]] std::vector<std::pair<ServoID, float>> inverseKinematics(
+        const message::motion::KinematicsModel& model,
+        const Eigen::Affine3d& leftTarget,
+        const Eigen::Affine3d& rightTarget);
 
 }  // namespace utility::motion::nloptinversekinematics
 
-#endif  // UTILITY_MOTION_INVERSEKINEMATICS_HPP
+#endif  // UTILITY_MOTION_NLOPTINVERSEKINEMATICS_HPP

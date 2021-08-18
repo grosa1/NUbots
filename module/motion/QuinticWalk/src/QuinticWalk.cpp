@@ -13,6 +13,7 @@
 #include "utility/math/comparison.hpp"
 #include "utility/math/euler.hpp"
 #include "utility/motion/InverseKinematics.hpp"
+#include "utility/motion/NLoptInverseKinematics.hpp"
 #include "utility/support/yaml_expression.hpp"
 
 namespace module::motion {
@@ -33,6 +34,7 @@ namespace module::motion {
 
     using utility::input::ServoID;
     using utility::motion::kinematics::calculateLegJoints;
+    using utility::motion::nloptinversekinematics::inverseKinematics;
 
     /**
      * @brief loads the configuration from cfg into config
@@ -309,11 +311,16 @@ namespace module::motion {
             walk_engine.getFootstep().isLeftSupport() ? Hst.matrix().cast<double>() : Hft.matrix().cast<double>();
         const Eigen::Matrix4d right_foot =
             walk_engine.getFootstep().isLeftSupport() ? Hft.matrix().cast<double>() : Hst.matrix().cast<double>();
-
+        auto start        = std::chrono::high_resolution_clock::now();
         const auto joints = calculateLegJoints(kinematicsModel,
                                                Eigen::Affine3f(left_foot.cast<float>()),
                                                Eigen::Affine3f(right_foot.cast<float>()));
+        auto stop         = std::chrono::high_resolution_clock::now();
+        auto duration     = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+        std::cout << "Old Ik Time taken: " << duration.count() << std::endl;
 
+        const auto joints_new =
+            inverseKinematics(kinematicsModel, Eigen::Affine3d(left_foot), Eigen::Affine3d(right_foot));
         auto waypoints = motion(joints);
         emit(std::move(waypoints));
     }

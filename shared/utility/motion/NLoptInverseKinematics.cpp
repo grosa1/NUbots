@@ -19,7 +19,6 @@
 
 #include "NLoptInverseKinematics.hpp"
 
-#include "NLoptForwardKinematics.hpp"
 
 namespace utility::motion::nloptinversekinematics {
 
@@ -28,6 +27,11 @@ namespace utility::motion::nloptinversekinematics {
 
     using LimbID  = utility::input::LimbID;
     using ServoID = utility::input::ServoID;
+
+    typedef struct {
+        Eigen::Affine3d target;
+        LimbID limb;
+    } Data;
 
     Eigen::Affine3d forwardKinematics(const std::vector<double>& q) {
         Eigen::Affine3d runningTransform = Eigen::Affine3d::Identity();
@@ -64,29 +68,75 @@ namespace utility::motion::nloptinversekinematics {
     }
 
     double cost(const std::vector<double>& q, std::vector<double>& grad, void* data) {
-        count++;
+        Data* d            = reinterpret_cast<Data*>(data);
         Eigen::Vector3d xe = forwardKinematics(q).translation();
-        Eigen::Vector3d xd(0.4, -0.055, 0);
+        Eigen::Vector3d xd;  //(0, -0.055, -0.4);
+        xd << d->target.translation();
         Eigen::Vector3d cost = xe - xd;
         return cost.norm();
     }
 
-    void inverseKinematics() {
-        nlopt::opt opt(nlopt::LN_COBYLA, 6);  // Providing gradients will decrease computational time required
-        opt.set_min_objective(cost, NULL);
-        opt.set_xtol_rel(1e-4);
+    std::vector<std::pair<ServoID, float>> inverseKinematics(const message::motion::KinematicsModel& model,
+                                                             const Eigen::Affine3d& target,
+                                                             const LimbID& limb) {
+        Data *data, d;
+        d.target = target;
+        d.limb   = limb;
+        data     = &d;
+
+        nlopt::opt opt(nlopt::LN_COBYLA, 6);
+        opt.set_min_objective(cost, data);
+        opt.set_xtol_rel(1e-2);
         std::vector<double> x(6, 0.0);
         double minf;
         // Run the optimizer
-        auto start = std::chrono::high_resolution_clock::now();
         std::cout << opt.optimize(x, minf) << std::endl;
-        auto stop     = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-        std::cout << "Time taken: " << duration.count() << std::endl;
-        // Print the results
-        std::cout << "Iteration count: " << count << std::endl;
-        std::cout << "Found minimum at f(" << x[0] << "," << x[1] << "," << x[2] << "," << x[3] << "," << x[4] << ","
-                  << x[5] << "," << x[5] << ") = " << std::setprecision(10) << minf << std::endl;
+        float hipYaw     = (float) x[0];
+        float hipRoll    = (float) x[1];
+        float hipPitch   = (float) x[2];
+        float knee       = (float) x[3];
+        float anklePitch = (float) x[4];
+        float ankleRoll  = (float) x[5];
+
+        std::cout << "NLopt Hip yaw" << hipYaw << std::endl;
+        std::cout << "NLopt Hip roll" << hipRoll << std::endl;
+        std::cout << "NLopt Hip pitch" << hipPitch << std::endl;
+        std::cout << "NLopt Knee pitch" << knee << std::endl;
+        std::cout << "NLopt Ankle pitch" << anklePitch << std::endl;
+        std::cout << "NLopt Ankle Roll" << ankleRoll << std::endl;
+
+        std::vector<std::pair<ServoID, float>> positions;
+        if (limb == LimbID::LEFT_LEG) {
+            positions.push_back(std::make_pair(ServoID::L_HIP_YAW, -hipYaw));
+            positions.push_back(std::make_pair(ServoID::L_HIP_ROLL, hipRoll));
+            positions.push_back(std::make_pair(ServoID::L_HIP_PITCH, -hipPitch));
+            positions.push_back(std::make_pair(ServoID::L_KNEE, M_PI - knee));
+            positions.push_back(std::make_pair(ServoID::L_ANKLE_PITCH, -anklePitch));
+            positions.push_back(std::make_pair(ServoID::L_ANKLE_ROLL, ankleRoll));
+        }
+        else {
+            positions.push_back(std::make_pair(ServoID::R_HIP_YAW, (model.leg.LEFT_TO_RIGHT_HIP_YAW) * -hipYaw));
+            positions.push_back(std::make_pair(ServoID::R_HIP_ROLL, (model.leg.LEFT_TO_RIGHT_HIP_ROLL) * hipRoll));
+            positions.push_back(std::make_pair(ServoID::R_HIP_PITCH, (model.leg.LEFT_TO_RIGHT_HIP_PITCH) * -hipPitch));
+            positions.push_back(std::make_pair(ServoID::R_KNEE, (model.leg.LEFT_TO_RIGHT_KNEE) * (M_PI - knee)));
+            positions.push_back(
+                std::make_pair(ServoID::R_ANKLE_PITCH, (model.leg.LEFT_TO_RIGHT_ANKLE_PITCH) * -anklePitch));
+            positions.push_back(
+                std::make_pair(ServoID::R_ANKLE_ROLL, (model.leg.LEFT_TO_RIGHT_ANKLE_ROLL) * ankleRoll));
+        }
+
+        // delete data;
+        return positions;
     }
+
+    std::vector<std::pair<ServoID, float>> inverseKinematics(const message::motion::KinematicsModel& model,
+                                                             const Eigen::Affine3d& leftTarget,
+                                                             const Eigen::Affine3d& rightTarget) {
+        auto joints  = inverseKinematics(model, leftTarget, LimbID::LEFT_LEG);
+        auto joints2 = inverseKinematics(model, rightTarget, LimbID::RIGHT_LEG);
+        joints.insert(joints.end(), joints2.begin(), joints2.end());
+        return joints;
+    }
+
 
 }  // namespace utility::motion::nloptinversekinematics
