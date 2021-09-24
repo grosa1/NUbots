@@ -303,7 +303,7 @@ namespace module::input {
                     return;
                 }
                 break;
-            default: assert(false); break;
+            default: assert(false); return;
         }
         on<IO>(voice2json_proc.stdout, IO::READ).then([this] {
             char buffer[0x1000];
@@ -374,57 +374,56 @@ namespace module::input {
     SpeechIntent::SpeechIntent(std::unique_ptr<NUClear::Environment> environment)
         : Reactor(std::move(environment)), config{} {
 
-        on<Configuration, With<CommandLineArguments>>("SpeechIntent.yaml")
-            .then([this](const Configuration& cfg, const CommandLineArguments& args) {
-                this->log_level = cfg["log_level"].as<NUClear::LogLevel>();
-                if (args.size() >= 2) {
-                    if (args[1] == "file") {
-                        if (args.size() != 3) {
-                            NUClear::log<NUClear::FATAL>(
-                                fmt::format("invalid number of arguments, expected 3, got {}", args.size()));
-                        }
-                        this->config.transcribe_mode = TRANSCRIBE_MODE_FILE;
-                        std::string wav_filename     = std::string(args[2]);
 
-                        init();
+        on<Configuration>("SpeechIntent.yaml").then([this](const Configuration& cfg) {
+            this->log_level = cfg["log_level"].as<NUClear::LogLevel>();
+        });
 
-                        on<Trigger<SpeechIntentMsg>>().then([this](const SpeechIntentMsg& msg) { print_intent(msg); });
-                        recognize_wav(wav_filename);
-                        return;
-                    }
-                    else if (args[1] == "cli") {
-                        this->config.transcribe_mode = TRANSCRIBE_MODE_FILE;
-
-                        on<Trigger<SpeechIntentMsg>>().then([this](const SpeechIntentMsg& msg) { print_intent(msg); });
-                        on<IO>(STDIN_FILENO, IO::READ).then([this] {
-                            std::string str = {};
-                            getline(std::cin, str);
-
-                            log(fmt::format("SpeechIntent STDIN = {}", str));
-
-                            std::stringstream ss(str);
-                            std::string cmd = {};
-                            getline(ss, cmd, ' ');
-                            if (cmd == "file") {
-                                std::string filename = {};
-                                getline(ss, filename);
-                                recognize_wav(filename);
-                            }
-                        });
-                    }
+        on<Trigger<CommandLineArguments>>().then([this](const CommandLineArguments& args) {
+            if (args.size() > 1 && args[1] == "file") {
+                if (args.size() != 3) {
+                    NUClear::log<NUClear::FATAL>(
+                        fmt::format("invalid number of arguments, expected 3, got {}", args.size()));
                 }
+                this->config.transcribe_mode = TRANSCRIBE_MODE_FILE;
+                std::string wav_filename     = std::string(args[2]);
+                log(wav_filename);
+
                 init();
-            });
+
+                on<Trigger<SpeechIntentMsg>>().then([this](const SpeechIntentMsg& msg) { print_intent(msg); });
+                recognize_wav(wav_filename);
+            }
+            else if (args.size() > 1 && args[1] == "input") {
+                this->config.transcribe_mode = TRANSCRIBE_MODE_FILE;
+                init();
+
+                on<Trigger<SpeechIntentMsg>>().then([this](const SpeechIntentMsg& msg) { print_intent(msg); });
+                on<IO>(STDIN_FILENO, IO::READ).then([this] {
+                    std::string str = {};
+                    getline(std::cin, str);
+
+                    log(fmt::format("SpeechIntent STDIN = {}", str));
+
+                    std::stringstream ss(str);
+                    std::string cmd = {};
+                    getline(ss, cmd, ' ');
+                    if (cmd == "file") {
+                        std::string filename = {};
+                        getline(ss, filename);
+                        recognize_wav(filename);
+                    }
+                });
+            }
+            else {
+                init();
+            }
+        });
     }
 
     SpeechIntent::~SpeechIntent() {
-        if (voice2json_proc.stdout)
-            close(voice2json_proc.stdout);
-        if (voice2json_proc.stderr)
-            close(voice2json_proc.stderr);
-        if (voice2json_proc.stdin)
-            close(voice2json_proc.stdin);
-    }
-
-
-}  // namespace module::input
+            if (voice2json_proc.stdout)
+                close(voice2json_proc.stdout);
+            if (voice2json_proc.stderr)
+                close(voice2json_proc.stderr);
+            if (voice2json_proc.stdin)
