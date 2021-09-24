@@ -233,7 +233,7 @@ namespace module::input {
 
     // write out the correct format for voice2json to consume
     // when voice2json is called using the "transcribe-wav --input-size" flags
-    // it excepts the first line to be the file size (as asii)
+    // it excepts the first line to be the file size (as ascii)
     // followed by the wav file after the newline
     bool write_audio_to_file(int fd, char* filename) {
         ssize_t write_res = 0;
@@ -338,14 +338,11 @@ namespace module::input {
             ssize_t bytes_read = read(voice2json_proc.stderr, buffer, sizeof(buffer) - 1);
             if (bytes_read == -1) {
                 NUClear::log<NUClear::FATAL>(
-                    fmt::format("({}:{}) failed to read from spawned process stderr, errno = {}",
-                                __FILE__,
-                                __LINE__,
-                                errno));
+                    fmt::format("({}:{}) Failed to read from stderr, errno = {}", __FILE__, __LINE__, errno));
                 return;
             }
             buffer[bytes_read] = 0;
-            NUClear::log<NUClear::FATAL>(fmt::format("({}:{}) VOICE2JSON stderr, errno = {} ({} bytes) = {}",
+            NUClear::log<NUClear::FATAL>(fmt::format("({}:{})\nVOICE2JSON stderr, errno = {} ({} bytes)\n{}",
                                                      __FILE__,
                                                      __LINE__,
                                                      errno,
@@ -394,7 +391,7 @@ namespace module::input {
                 on<Trigger<SpeechIntentMsg>>().then([this](const SpeechIntentMsg& msg) { print_intent(msg); });
                 recognize_wav(wav_filename);
             }
-            else if (args.size() > 1 && args[1] == "input") {
+            else if (args.size() > 1 && args[1] == "cli") {
                 this->config.transcribe_mode = TRANSCRIBE_MODE_FILE;
                 init();
 
@@ -422,8 +419,8 @@ namespace module::input {
     }
 
     SpeechIntent::~SpeechIntent() {
-            if (voice2json_proc.stdout)
-                close(voice2json_proc.stdout);
-            if (voice2json_proc.stderr)
-                close(voice2json_proc.stderr);
-            if (voice2json_proc.stdin)
+        if (voice2json_proc.stdout)
+            close(voice2json_proc.stdout);
+        if (voice2json_proc.stderr)
+            close(voice2json_proc.stderr);
+        if (voice2json_proc.stdin)
