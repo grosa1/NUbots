@@ -306,7 +306,7 @@ namespace module::input {
         }
 
         // Read from the stdout of the voice2json process which is spawned in either "transcribe-stream" or
-        //"transcribe-wav" modes.
+        // "transcribe-wav" modes.
         on<IO>(voice2json_proc.stdout, IO::READ).then([this] {
             char buffer[0x1000];
             ssize_t bytes_read = read(voice2json_proc.stdout, buffer, sizeof(buffer) - 1);
@@ -375,19 +375,16 @@ namespace module::input {
         emit(std::move(msg));
     }
 
-    SpeechIntent::SpeechIntent(std::unique_ptr<NUClear::Environment> environment)
-        : Reactor(std::move(environment)), config{} {
-
-
+    SpeechIntent::SpeechIntent(std::unique_ptr<NUClear::Environment> environment) : Reactor(std::move(environment)) {
         on<Configuration>("SpeechIntent.yaml").then([this](const Configuration& cfg) {
             this->log_level = cfg["log_level"].as<NUClear::LogLevel>();
         });
 
-        //@brief Choose between 3 modes based on command line arguments
-        // The "cli" and "file" arguments are for testing purposes. In the case where no cmd line arguments are passed
-        // the module is initialized in "TRANSCRIBE_MODE_STREAM" mode
+        // Choose between 3 modes based on command line arguments. The "cli" and "file" arguments are for testing
+        // purposes. In the case where no cmd line arguments are passed the module is initialized in
+        // "TRANSCRIBE_MODE_STREAM" mode.
         on<Trigger<CommandLineArguments>>().then([this](const CommandLineArguments& args) {
-            // for testing modes we initialize in "transcribe-wav" mode
+            // For testing modes we initialize in "transcribe-wav" mode
             if (args.size() > 1 && args[1] == "file") {
                 if (args.size() != 3) {
                     NUClear::log<NUClear::FATAL>(
@@ -403,7 +400,7 @@ namespace module::input {
                 recognize_wav(wav_filename);
             }
             else if (args.size() > 1 && args[1] == "cli") {
-                //"Command line interface" mode. Used for testing purposes.
+                // "Command line interface" mode. Used for testing purposes.
                 // The module acts like a command line interface and accepts input from stdin.
                 // Currently only accepts the "file" command, which can regonize the speech intention from a wav file
                 init(TRANSCRIBE_MODE_FILE);
@@ -427,7 +424,7 @@ namespace module::input {
                 });
             }
             else {
-                // for non-testing modes we initialize in "transcribe-stream" mode
+                // Use the microphone input via voice2json (which in turn uses an arecord subprocess).
                 init(TRANSCRIBE_MODE_STREAM);
             }
         });
