@@ -4,8 +4,6 @@
 #include <fmt/format.h>
 #include <spawn.h>
 
-#include "json.h"
-
 #include "extension/Configuration.hpp"
 
 namespace module::input {
