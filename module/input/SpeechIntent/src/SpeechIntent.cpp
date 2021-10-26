@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <fmt/format.h>
 #include <fstream>
+#include <optional>
 #include <spawn.h>
 #include <yaml-cpp/yaml.h>
 
