@@ -317,12 +317,23 @@ namespace module::motion {
 
         const NUClear::clock::time_point time = NUClear::clock::now() + Per<std::chrono::seconds>(UPDATE_FREQUENCY);
 
+        // Lower gains for legs if in start step/movement state to reduce initial jerk
+        float gain_factor;
+        if (walk_engine.getState() == WalkEngineState::START_STEP
+            || walk_engine.getState() == WalkEngineState::START_MOVEMENT) {
+            gain_factor = 0.5f;
+        }
+        else {
+            gain_factor = 1.0f;
+        }
+
+
         for (const auto& joint : joints) {
             waypoints->commands.emplace_back(subsumptionId,
                                              time,
                                              joint.first,
                                              joint.second,
-                                             current_config.jointGains[joint.first],
+                                             gain_factor * current_config.jointGains[joint.first],
                                              100);
         }
 
@@ -331,7 +342,7 @@ namespace module::motion {
                                              time,
                                              joint.first,
                                              joint.second,
-                                             current_config.jointGains[joint.first],
+                                             gain_factor * current_config.jointGains[joint.first],
                                              100);
         }
 
