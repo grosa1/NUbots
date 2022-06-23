@@ -30,4 +30,5 @@ nuclear_role(
   # Motion
   motion::ScriptEngine
   motion::HeadController
+  output::ImageCompressor
 )
