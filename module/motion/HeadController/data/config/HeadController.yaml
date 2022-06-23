@@ -2,7 +2,7 @@ log_level: WARN
 
 #Servo controller parameters
 head_motors:
-  gain: 10.0
+  gain: 3.0
   torque: 100.0
 #Initial head position; arbitrary and useful for controlling the head when no headbehavior is installed
 initial:
