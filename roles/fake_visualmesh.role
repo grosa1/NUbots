@@ -19,5 +19,6 @@ nuclear_role(
   vision::GreenHorizonDetector
   vision::BallDetector
   vision::GoalDetector
+  output::ImageCompressor
   # Data logger support::logging::DataLogging
 )

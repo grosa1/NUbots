@@ -79,7 +79,7 @@ if(CI_BUILD)
 endif()
 
 # Enable address sanitizer
-option(USE_ASAN "Enable address sanitization" OFF)
+option(USE_ASAN "Enable address sanitization" ON)
 if(USE_ASAN)
   add_compile_options(-fsanitize=address -fno-omit-frame-pointer -U_FORTIFY_SOURCE -fno-common)
   add_link_options(-fsanitize=address)
