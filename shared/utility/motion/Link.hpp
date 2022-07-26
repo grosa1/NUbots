@@ -61,6 +61,66 @@ namespace utility::motion {
         std::vector<std::shared_ptr<Link<Scalar>>> child_links;
 
     public:
+        /**
+         * @brief Construct a new Link from a URDF file description.
+         * @param link_name The name of the link
+         * @param link_id The unique ID of the link
+         * @param joint The joint of the link
+         * @param centre_of_mass The centre of mass of the link
+         * @param inertia The inertia matrix of the link
+         * @param mass The mass of the link
+         * @param parent_link The parent link of the link
+         * @param child_links The child links of the link
+         */
+        Link(const std::string& link_name,
+             const int link_id,
+             const Joint<Scalar>& joint,
+             const Eigen::Matrix<Scalar, 3, 1>& centre_of_mass,
+             const Eigen::Matrix<Scalar, 3, 3>& inertia,
+             const Scalar mass,
+             std::shared_ptr<Link<Scalar>> parent_link,
+             std::vector<std::shared_ptr<Link<Scalar>>> child_links) {
+            this->LINK_NAME      = link_name;
+            this->LINK_ID        = link_id;
+            this->JOINT          = joint;
+            this->CENTRE_OF_MASS = centre_of_mass;
+            this->INERTIA        = inertia;
+            this->MASS           = mass;
+            this->parent_link    = parent_link;
+            this->child_links    = child_links;
+        }
+
+        /**
+         * @brief Get the name of the link.
+         * @return The name of the link.
+         */
+        const std::string& get_name() const {
+            return LINK_NAME;
+        }
+
+        /**
+         * @brief Get the unique ID of the link.
+         * @return The unique ID of the link.
+         */
+        int get_id() const {
+            return LINK_ID;
+        }
+
+        /**
+         * @brief Get the joint of the link.
+         * @return The joint of the link.
+         */
+        const Joint<Scalar>& get_joint() const {
+            return JOINT;
+        }
+
+        /**
+         * @brief Add a joint to the link.
+         * @param joint The joint to add to the link.
+         */
+        void add_joint(const Joint<Scalar>& joint) {
+            JOINT = joint;
+        }
     };
 }  // namespace utility::motion
 

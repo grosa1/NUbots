@@ -53,8 +53,14 @@ namespace utility::motion {
         /// @brief The number of joints in the robot model.
         int n_joints;
 
-        /// @brief List of links in the robot model.
-        std::vector<std::shared_ptr<Link<Scalar>>> links;
+        /// @brief The base link of the robot model.
+        std::shared_ptr<Link<Scalar>> base_link;
+
+        /// @brief Map of links in the robot model.
+        std::map<std::string, std::shared_ptr<Link<Scalar>>> links;
+
+        /// @brief Map of joints in the robot model.
+        std::map<std::string, std::shared_ptr<Joint<Scalar>>> joints;
 
         /// @brief The gravitational acceleration experienced by robot.
         Eigen::Matrix<Scalar, 3, 1> gravity = {0, 0, -9.81};
@@ -81,12 +87,32 @@ namespace utility::motion {
             model = urdf::UrdfModel::fromUrdfStr(urdf_string);
 
             std::vector<std::shared_ptr<urdf::Link>> links;
+            std::vector<std::shared_ptr<urdf::Joint>> joints;
+
             model->getLinks(links);
+            // TODO: Add all the link and joints to the robot model, with option of a floating base
             for (auto link : links) {
                 std::cout << "Name of link: " << link->name << std::endl;
+                // Check if inertial exists
+                if (link->inertial != nullopt) {
+                    auto inertial = &link->inertial.value();
+                    std::cout << "Mass: " << inertial->mass << std::endl;
+                    std::cout << "ixx : " << inertial->ixx << std::endl;
+                    std::cout << "ixy : " << inertial->ixy << std::endl;
+                    std::cout << "ixz : " << inertial->ixz << std::endl;
+                    std::cout << "iyy : " << inertial->iyy << std::endl;
+                    std::cout << "iyz : " << inertial->iyz << std::endl;
+                    std::cout << "izz : " << inertial->izz << std::endl;
+                    std::cout << "inertial->origin.rotation.x : " << inertial->origin.rotation.x << std::endl;
+                    std::cout << "inertial->origin.rotation.y : " << inertial->origin.rotation.y << std::endl;
+                    std::cout << "inertial->origin.rotation.z : " << inertial->origin.rotation.z << std::endl;
+                    std::cout << "origin.rotation.w : " << inertial->origin.rotation.w << std::endl;
+                    std::cout << "origin.position.x : " << inertial->origin.position.x << std::endl;
+                    std::cout << "origin.position.y : " << inertial->origin.position.y << std::endl;
+                    std::cout << "origin.position.z : " << inertial->origin.position.z << std::endl << std::endl;
+                }
             }
 
-            // TODO: Add all the link and joints to the robot model, with option of a floating base
 
             // TODO: Get the number of links and joints
         }

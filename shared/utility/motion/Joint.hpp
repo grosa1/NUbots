@@ -26,7 +26,7 @@
 namespace utility::motion {
 
     /// @brief The types of the joints
-    enum class JointType { FIXED, REVOLUTE, PRISMATIC };
+    enum class JointType { UNKNOWN, REVOLUTE, CONTINUOUS, PRISMATIC, FLOATING, PLANAR, FIXED };
 
     /**
      * @brief Defines how a link moves relative to an attachment point
