@@ -22,3 +22,11 @@
 #include <catch.hpp>
 
 #include "utility/motion/RobotModel.hpp"
+
+TEST_CASE("Test the RobotModel", "[utility][motion]") {
+
+    // Create a robot model
+    utility::motion::RobotModel<double> robot_model("/home/nubots/NUbots/shared/utility/motion/simple.urdf");
+
+    REQUIRE(10 == 0);
+}

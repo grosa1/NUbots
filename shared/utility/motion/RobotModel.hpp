@@ -22,10 +22,16 @@
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include <fstream>
+#include <iostream>
 #include <memory>
+#include <sstream>
 
 #include "utility/motion/Joint.hpp"
 #include "utility/motion/Link.hpp"
+#include "utility/motion/urdf_parser/link.h"
+#include "utility/motion/urdf_parser/model.h"
+#include "utility/motion/urdf_parser/txml.h"
 
 namespace utility::motion {
 
@@ -38,6 +44,9 @@ namespace utility::motion {
     class RobotModel {
 
     private:
+        /// @brief The name of the robot model.
+        std::string name;
+
         /// @brief The number of links in the robot model.
         int n_links;
 
@@ -56,12 +65,39 @@ namespace utility::motion {
          * @param path_to_urdf The path to the URDF file
          */
         RobotModel(const std::string& path_to_urdf, const bool floating_base = false) {
-            // TODO: Parse the URDF file
+
+            // Parse the URDF file
+            std::cout << "Loading URDF from: " << path_to_urdf << std::endl;
+            ifstream input_file(path_to_urdf);
+            if (!input_file.is_open()) {
+                cerr << "Could not open the file - '" << path_to_urdf << "'" << endl;
+                exit(EXIT_FAILURE);
+            }
+
+            std::string urdf_string =
+                string((std::istreambuf_iterator<char>(input_file)), std::istreambuf_iterator<char>());
+
+            std::shared_ptr<urdf::UrdfModel> model;
+            model = urdf::UrdfModel::fromUrdfStr(urdf_string);
+
+            std::vector<std::shared_ptr<urdf::Link>> links;
+            model->getLinks(links);
+            for (auto link : links) {
+                std::cout << "Name of link: " << link->name << std::endl;
+            }
 
             // TODO: Add all the link and joints to the robot model, with option of a floating base
 
             // TODO: Get the number of links and joints
         }
+
+        /**
+         * @brief Adds a joint to the robot model.
+         *
+         * @param joint The joint to add to the robot model.
+         */
+        void addJoint(const Joint<Scalar>& joint);
+
 
         /**
          * @brief Get the number of links in the robot model.
@@ -93,14 +129,6 @@ namespace utility::motion {
          */
         const Eigen::Matrix<Scalar, 3, 1>& get_gravity() const {
             return gravity;
-        }
-
-        /**
-         * @brief Set the configuration vector of the robot model.
-         *
-         */
-        void set_q(const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& q) {
-            this->q = q;
         }
 
         /**
@@ -171,15 +199,26 @@ namespace utility::motion {
 
         /**
          * @brief Computes the geometric jacobian of the robot model.
-         * @param target_link The link to which the jacobian is computed.
-         * @param source_link The link from which the jacobian is computed.
+         * @param target_link_id The link to which the jacobian is computed.
+         * @param source_link_id The link from which the jacobian is computed.
          * @param q The configuration vector of the robot model.
          * @return The geometric jacobian to the target link from the source link frame.
          */
         Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> geometric_jacobian(
-            int target_link,
-            int source_link,
+            int target_link_id,
+            int source_link_id,
             const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& q) const;
+
+        /**
+         * @brief Computes the centre of mass expressed in source link frame.
+         *
+         * @param source_link_id The link from which the centre of mass position is computed.
+         * @param q The configuration vector of the robot model.
+         *
+         * @return The centre of mass position expressed in source link frame.
+         */
+        Eigen::Matrix<Scalar, 3, 1> centre_of_mass(int source_link_id,
+                                                   const Eigen::Matrix<Scalar, Eigen::Dynamic, 1>& q) const;
     };
 }  // namespace utility::motion
 
