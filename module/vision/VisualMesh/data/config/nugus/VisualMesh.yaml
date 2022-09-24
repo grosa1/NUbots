@@ -9,7 +9,7 @@
 
 cameras:
   Left:
-    concurrent: 2
+    concurrent: 1
     network: config/networks/RobocupNetwork.yaml
     engine: opencl
     cache_directory: "./vision_cache/"

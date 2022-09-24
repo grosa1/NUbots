@@ -24,7 +24,6 @@
 
 #include "extension/Configuration.hpp"
 
-#include "message/behaviour/KickPlan.hpp"
 #include "message/behaviour/MotionCommand.hpp"
 #include "message/input/Sensors.hpp"
 #include "message/motion/WalkCommand.hpp"
@@ -44,7 +43,6 @@ namespace module::behaviour::planning {
     using extension::Configuration;
 
     using message::behaviour::MotionCommand;
-    using message::behaviour::WantsToKick;
     using message::input::Sensors;
     using message::motion::DisableWalkEngineCommand;
     using message::motion::EnableWalkEngineCommand;
