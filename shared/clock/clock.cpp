@@ -31,8 +31,8 @@ namespace utility::clock {
         auto now = NUClear::base_clock::now();
 
         // Set up a circular buffer index for the clock data
-        int c = active;
-        int n = (c + 1) % data.size();
+        int c      = active;
+        uint64_t n = (c + 1) % data.size();
 
         // Update the next clock element in the list before we set it for reading so the whole struct is complete before
         // we let others read it
@@ -49,6 +49,7 @@ namespace utility::clock {
 namespace NUClear {
     clock::time_point clock::now() {
 
+        // NOLINTNEXTLINE
         using namespace utility::clock;  // Using namespace is fine in a function scope
 
         // Get the current index in a variable in case it changes while we use it

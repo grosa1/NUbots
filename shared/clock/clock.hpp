@@ -6,6 +6,7 @@
 namespace utility::clock {
     // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
     void update_rtf(const double& rtf);
+    // NOLINTNEXTLINE
     extern double custom_rtf;  // Real time factor
 }  // namespace utility::clock
 
