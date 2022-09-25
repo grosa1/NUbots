@@ -123,6 +123,8 @@ namespace module::behaviour::strategy {
             cfg.walk_to_ready_time = config["walk_to_ready_time"].as<int>();
 
             cfg.kicking_distance_threshold = config["kicking_distance_threshold"].as<float>();
+            cfg.kick_walking_time =
+                duration_cast<NUClear::clock::duration>(duration<double>(config["kick_walking_time"].as<double>()));
 
             cfg.kicking_angle_threshold = config["kicking_angle_threshold"].as<float>();
 
@@ -480,17 +482,25 @@ namespace module::behaviour::strategy {
     }
 
     void SoccerStrategy::play() {
-        if (distance_to_ball < cfg.kicking_distance_threshold && angle_to_ball < cfg.kicking_angle_threshold) {
-            // Ball is close enough and in the correct direction to kick
+        // The robot wants to kick and it's been given enough extra time for walking
+        if (wants_to_kick && (NUClear::clock::now() - kick_time > cfg.kick_walking_time)) {
             if (rBTt_smoothed.y() > 0) {
-                log<NUClear::DEBUG>("We are close to the ball, kick it left");
+                log<NUClear::DEBUG>("\t\tWe are close to the ball, kick it left");
                 emit(std::make_unique<KickScriptCommand>(LimbID::LEFT_LEG, KickCommandType::NORMAL));
             }
             else {
-                log<NUClear::DEBUG>("We are close to the ball, kick it right");
+                log<NUClear::DEBUG>("\t\tWe are close to the ball, kick it right!");
                 emit(std::make_unique<KickScriptCommand>(LimbID::RIGHT_LEG, KickCommandType::NORMAL));
             }
+            wants_to_kick = false;
         }
+        else if (distance_to_ball < cfg.kicking_distance_threshold && angle_to_ball < cfg.kicking_angle_threshold) {
+            // Ball is close enough and in the correct direction to kick
+            log<NUClear::DEBUG>("\t\t\tGOING TO KICK!");
+            wants_to_kick = true;
+            kick_time     = NUClear::clock::now();
+        }
+
         else {
             // Request walk planner to walk to the ball
             emit(std::make_unique<MotionCommand>(utility::behaviour::BallApproach()));

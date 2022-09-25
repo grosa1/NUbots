@@ -60,7 +60,14 @@ namespace module::behaviour::strategy {
             float kicking_distance_threshold = 0.0f;
             float kicking_angle_threshold    = 0.0f;
             float rBTt_smoothing_factor      = 0.0f;
+            NUClear::clock::duration kick_walking_time{};
         } cfg;
+
+        /// @brief Whether the robot is going to kick or not
+        bool wants_to_kick = false;
+
+        /// @brief Time when the robot decided to kick
+        NUClear::clock::time_point kick_time{};
 
         /// @brief Distance to the ball from robot torso
         float distance_to_ball = 1.0f;

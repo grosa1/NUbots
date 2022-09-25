@@ -28,7 +28,9 @@ force_penalty_shootout: false
 walk_to_ready_time: 20
 
 # Distance to begin the kick on the ball while normally playing (in metres)
-kicking_distance_threshold: 0.35
+kicking_distance_threshold: 0.5
+# After reaching the kick distance threshold, how long will the robot keep walking before kicking (ms)
+kick_walking_time: 2
 
 # Angle from the front to begin kicking the ball (in radians)
 kicking_angle_threshold: 0.2
