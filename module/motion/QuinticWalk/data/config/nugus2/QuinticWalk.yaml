@@ -47,7 +47,7 @@ walk:
     height: 0.44
     # Trunk pitch orientation (how much we lean the torso forward or backward, does not change)
     # (in rad)
-    pitch: 0.45
+    pitch: 0.15
     # Phase offset of trunk oscillation
     # (half cycle phase, [-1:1])
     phase: -0.20781713685949587
