@@ -494,7 +494,9 @@ namespace module::behaviour::strategy {
             }
             wants_to_kick = false;
         }
-        else if (distance_to_ball < cfg.kicking_distance_threshold && angle_to_ball < cfg.kicking_angle_threshold) {
+        else if (!wants_to_kick
+                 && (distance_to_ball < cfg.kicking_distance_threshold
+                     && angle_to_ball < cfg.kicking_angle_threshold)) {
             // Ball is close enough and in the correct direction to kick
             log<NUClear::DEBUG>("\t\t\tGOING TO KICK!");
             wants_to_kick = true;
