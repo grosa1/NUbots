@@ -13,6 +13,7 @@ nuclear_role(
   network::NetworkForwarder
   network::PlotJuggler
   support::configuration::SoccerConfig
+  support::logging::ConsoleLogHandler
   # input
   input::GameController
   # Simulator connection

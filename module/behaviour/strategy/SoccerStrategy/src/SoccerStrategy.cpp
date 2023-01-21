@@ -132,6 +132,25 @@ namespace module::behaviour::strategy {
         on<Trigger<VisionGoals>>().then([this](const VisionGoals& goals) {
             if (!goals.goals.empty()) {
                 goal_last_measured = NUClear::clock::now();
+                log("Goal detected");
+                log(goals.goals.size());
+                // goal post tests. Adding the two goal vectors should give the centre.
+                // How to make to robot face that direction?
+                // if we have found two posts
+                if (goals.goals.size() > 1) {
+                    Eigen::Vector3f post_1 = goals.goals[0].post.bottom;
+                    Eigen::Vector3f post_2 = goals.goals[1].post.bottom;
+                }
+
+                for (size_t i = 0; i < goals.goals.size(); i++) {
+                    // log("Distance to goals " << i << ": ", goals.goals[i].post.distance);
+                    log(fmt::format("Distance to goals {}: ", i), goals.goals[i].post.distance);
+                    log(fmt::format("Goal bottom vector {} x:{} y:{} z:{}",
+                                    i,
+                                    goals.goals[i].post.bottom.x(),
+                                    goals.goals[i].post.bottom.y(),
+                                    goals.goals[i].post.bottom.z()));
+                }
             }
         });
 
@@ -445,7 +464,7 @@ namespace module::behaviour::strategy {
         }
 
         if (log_level <= NUClear::DEBUG) {
-            log<NUClear::DEBUG>("Distance to ball: ", distance_to_ball);
+            // log<NUClear::DEBUG>("Distance to ball: ", distance_to_ball);
         }
     }
 
