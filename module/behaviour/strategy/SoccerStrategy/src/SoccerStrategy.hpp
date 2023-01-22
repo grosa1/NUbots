@@ -128,7 +128,7 @@ namespace module::behaviour::strategy {
         void stand_still();
 
         /// @brief Playing behaviour when ball is visible, currently just walks to the ball
-        void play(const std::shared_ptr<const FilteredBall>& ball, const std::shared_ptr<const VisionGoals>& goals);
+        void play(const std::shared_ptr<const FilteredBall>& ball);
 
         /// @brief Playing behaviour when ball is lost, currently just rotate on spot
         void find(const std::shared_ptr<const FilteredBall>& ball);
@@ -141,14 +141,12 @@ namespace module::behaviour::strategy {
 
         /// @brief Penalty mode state machine, used to decide what phase behaviour to use.
         void penalty_shootout(const message::input::GameState::Data::Phase& phase,
-                              const std::shared_ptr<const FilteredBall>& ball,
-                              const std::shared_ptr<const VisionGoals>& goals);
+                              const std::shared_ptr<const FilteredBall>& ball);
 
         /// @brief Normal mode state machine, used to decide what phase behaviour to use.
         void normal(const message::input::GameState& game_state,
                     const message::input::GameState::Data::Phase& phase,
-                    const std::shared_ptr<const FilteredBall>& ball,
-                    const std::shared_ptr<const VisionGoals>& goals);
+                    const std::shared_ptr<const FilteredBall>& ball);
 
         /// @brief Penalty mode, initial phase behaviour/strategy
         void penalty_shootout_initial();
@@ -160,8 +158,7 @@ namespace module::behaviour::strategy {
         void penalty_shootout_set();
 
         /// @brief Penalty mode, playing phase behaviour/strategy
-        void penalty_shootout_playing(const std::shared_ptr<const FilteredBall>& ball,
-                                      const std::shared_ptr<const VisionGoals>& goals);
+        void penalty_shootout_playing(const std::shared_ptr<const FilteredBall>& ball);
 
         /// @brief Penalty mode, timeout phase behaviour/strategy
         void penalty_shootout_timeout();
@@ -179,8 +176,7 @@ namespace module::behaviour::strategy {
         void normal_set();
 
         /// @brief Normal mode, playing phase behaviour/strategy
-        void normal_playing(const std::shared_ptr<const FilteredBall>& ball,
-                            const std::shared_ptr<const VisionGoals>& goals);
+        void normal_playing(const std::shared_ptr<const FilteredBall>& ball);
 
         /// @brief Normal mode, finished phase behaviour/strategy
         void normal_finished();
