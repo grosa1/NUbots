@@ -32,10 +32,12 @@
 #include "message/localisation/Field.hpp"
 #include "message/localisation/FilteredBall.hpp"
 #include "message/support/FieldDescription.hpp"
+#include "message/vision/Goal.hpp"
 
 namespace module::behaviour::strategy {
 
     using FilteredBall = message::localisation::FilteredBall;
+    using VisionGoals  = message::vision::Goals;
 
     class SoccerStrategy : public NUClear::Reactor {
     private:
@@ -105,6 +107,13 @@ namespace module::behaviour::strategy {
         /// @brief The time since the last goal was measured
         NUClear::clock::time_point goal_last_measured;
 
+        /// @brief The centre of the goal posts that were most recently spotted (no telling which side is which yet -
+        /// L.Craft)
+        Eigen::Vector3f posts_centre;
+
+        /// @brief Average distance to most recently spotted goal posts
+        float dist_to_posts;
+
         /// @brief Resets ball localisation for use in initial phase of normal mode
         void initial_localisation_reset();
 
@@ -119,7 +128,7 @@ namespace module::behaviour::strategy {
         void stand_still();
 
         /// @brief Playing behaviour when ball is visible, currently just walks to the ball
-        void play(const std::shared_ptr<const FilteredBall>& ball);
+        void play(const std::shared_ptr<const FilteredBall>& ball, const std::shared_ptr<const VisionGoals>& goals);
 
         /// @brief Playing behaviour when ball is lost, currently just rotate on spot
         void find(const std::shared_ptr<const FilteredBall>& ball);
@@ -132,12 +141,14 @@ namespace module::behaviour::strategy {
 
         /// @brief Penalty mode state machine, used to decide what phase behaviour to use.
         void penalty_shootout(const message::input::GameState::Data::Phase& phase,
-                              const std::shared_ptr<const FilteredBall>& ball);
+                              const std::shared_ptr<const FilteredBall>& ball,
+                              const std::shared_ptr<const VisionGoals>& goals);
 
         /// @brief Normal mode state machine, used to decide what phase behaviour to use.
         void normal(const message::input::GameState& game_state,
                     const message::input::GameState::Data::Phase& phase,
-                    const std::shared_ptr<const FilteredBall>& ball);
+                    const std::shared_ptr<const FilteredBall>& ball,
+                    const std::shared_ptr<const VisionGoals>& goals);
 
         /// @brief Penalty mode, initial phase behaviour/strategy
         void penalty_shootout_initial();
@@ -149,7 +160,8 @@ namespace module::behaviour::strategy {
         void penalty_shootout_set();
 
         /// @brief Penalty mode, playing phase behaviour/strategy
-        void penalty_shootout_playing(const std::shared_ptr<const FilteredBall>& ball);
+        void penalty_shootout_playing(const std::shared_ptr<const FilteredBall>& ball,
+                                      const std::shared_ptr<const VisionGoals>& goals);
 
         /// @brief Penalty mode, timeout phase behaviour/strategy
         void penalty_shootout_timeout();
@@ -167,13 +179,15 @@ namespace module::behaviour::strategy {
         void normal_set();
 
         /// @brief Normal mode, playing phase behaviour/strategy
-        void normal_playing(const std::shared_ptr<const FilteredBall>& ball);
+        void normal_playing(const std::shared_ptr<const FilteredBall>& ball,
+                            const std::shared_ptr<const VisionGoals>& goals);
 
         /// @brief Normal mode, finished phase behaviour/strategy
         void normal_finished();
 
         /// @brief Normal mode, time phase behaviour/strategy
         void normal_timeout();
+
 
     public:
         explicit SoccerStrategy(std::unique_ptr<NUClear::Environment> environment);
