@@ -102,7 +102,8 @@ namespace module::behaviour::planning {
         void rotate_on_spot(bool clockwise);
 
         /// @brief rotate_around_ball
-        void rotate_around_ball();
+        /// @param clockwise True if rotation command clockwise, false if rotation command anticlockwise
+        void rotate_around_ball(bool clockwise);
 
         /// @brief Configured to emit a walk command that results in robot being in desired position after the ready
         /// phase

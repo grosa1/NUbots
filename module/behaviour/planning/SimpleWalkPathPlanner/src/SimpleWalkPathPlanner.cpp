@@ -121,7 +121,9 @@ namespace module::behaviour::planning {
                         rotate_on_spot(latest_command.clockwise);
                         return;
 
-                    case message::behaviour::MotionCommand::Type::ROTATE_AROUND_BALL: rotate_around_ball(); return;
+                    case message::behaviour::MotionCommand::Type::ROTATE_AROUND_BALL:
+                        rotate_around_ball(latest_command.clockwise);
+                        return;
 
                     case message::behaviour::MotionCommand::Type::WALK_TO_READY: walk_to_ready(); return;
 
@@ -179,13 +181,15 @@ namespace module::behaviour::planning {
         update_priority(cfg.walk_path_planner_priority);
     }
 
-    void SimpleWalkPathPlanner::rotate_around_ball() {
+    void SimpleWalkPathPlanner::rotate_around_ball(bool clockwise) {
+        // Determine the direction of rotation
+        int sign = clockwise ? -1 : 1;
 
         std::unique_ptr<WalkCommand> command =
             std::make_unique<WalkCommand>(subsumption_id,
                                           Eigen::Vector3d(cfg.rotate_around_ball_speed_x,
                                                           cfg.rotate_around_ball_speed_y,
-                                                          cfg.rotate_around_ball_speed));
+                                                          sign * cfg.rotate_around_ball_speed));
 
         emit(std::move(command));
         update_priority(cfg.walk_path_planner_priority);

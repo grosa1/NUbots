@@ -71,9 +71,10 @@ namespace utility::behaviour {
         return cmd;
     }
 
-    inline MotionCommand RotateAroundBall() {
+    inline MotionCommand RotateAroundBall(bool clockwise) {
         MotionCommand cmd;
-        cmd.type = MotionCommand::Type::Value::ROTATE_AROUND_BALL;
+        cmd.type      = MotionCommand::Type::Value::ROTATE_AROUND_BALL;
+        cmd.clockwise = clockwise;
         return cmd;
     }
 
