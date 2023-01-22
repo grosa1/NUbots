@@ -17,9 +17,12 @@ rotate_speed_y: 0
 # rotate_around_ball tuning values
 rotate_around_ball_speed: 0.4
 rotate_around_ball_speed_x: 0
-rotate_around_ball_speed_y: -0.4
+rotate_around_ball_speed_y: -0.22
+#Note: Need to go through similar configs and adjust default signs
 
 # Walk to ready position tuning values
+# {x, y, omega} - x and y are the target to walk to and omega is the
+# required rotational velocity about the z axis. In torso space
 walk_to_ready_speed_x: 0.01
 walk_to_ready_speed_y: -0.01
 walk_to_ready_rotation: 0
