@@ -133,24 +133,30 @@ namespace module::behaviour::strategy {
             if (!goals.goals.empty()) {
                 goal_last_measured = NUClear::clock::now();
                 log("Goal detected");
-                log(goals.goals.size());
                 // goal post tests. Adding the two goal vectors should give the centre.
                 // How to make to robot face that direction?
                 // if we have found two posts
                 if (goals.goals.size() > 1) {
+                    // Note: only using the first two pairs of posts found
                     Eigen::Vector3f post_1 = goals.goals[0].post.bottom;
                     Eigen::Vector3f post_2 = goals.goals[1].post.bottom;
+                    posts_centre           = (post_1 + post_2);
+                    dist_to_posts          = (goals.goals[0].post.distance + goals.goals[1].post.distance) / 2;
+                    log(fmt::format("Center of post vector x:{} y:{} z:{} ",
+                                    posts_centre.x(),
+                                    posts_centre.y(),
+                                    posts_centre.z()));
                 }
 
-                for (size_t i = 0; i < goals.goals.size(); i++) {
-                    // log("Distance to goals " << i << ": ", goals.goals[i].post.distance);
-                    log(fmt::format("Distance to goals {}: ", i), goals.goals[i].post.distance);
-                    log(fmt::format("Goal bottom vector {} x:{} y:{} z:{}",
-                                    i,
-                                    goals.goals[i].post.bottom.x(),
-                                    goals.goals[i].post.bottom.y(),
-                                    goals.goals[i].post.bottom.z()));
-                }
+                // for (size_t i = 0; i < goals.goals.size(); i++) {
+                //     // log("Distance to goals " << i << ": ", goals.goals[i].post.distance);
+                //     log(fmt::format("Distance to goals {}: ", i), goals.goals[i].post.distance);
+                //     log(fmt::format("Goal bottom vector {} x:{} y:{} z:{}",
+                //                     i,
+                //                     goals.goals[i].post.bottom.x(),
+                //                     goals.goals[i].post.bottom.y(),
+                //                     goals.goals[i].post.bottom.z()));
+                // }
             }
         });
 
@@ -199,11 +205,13 @@ namespace module::behaviour::strategy {
            With<FieldDescription>,
            With<Field>,
            Optional<With<FilteredBall>>,
+           Optional<With<VisionGoals>>,
            Single>()
             .then([this](const Sensors& sensors,
                          const GameState& game_state,
                          const Phase& phase,
-                         const std::shared_ptr<const FilteredBall>& ball) {
+                         const std::shared_ptr<const FilteredBall>& ball,
+                         const std::shared_ptr<const VisionGoals>& goals) {
                 try {
                     // If we're picked up, stand still
                     if (picked_up(sensors)) {
@@ -214,20 +222,20 @@ namespace module::behaviour::strategy {
                     else {
                         // Overide SoccerStrategy and force normal mode in playing phase
                         if (cfg.force_playing) {
-                            normal_playing(ball);
+                            normal_playing(ball, goals);
                         }
                         // Overide SoccerStrategy and force penalty mode in playing phase
                         else if (cfg.force_penalty_shootout) {
                             team_kicking_off = GameEvents::Context::TEAM;
-                            penalty_shootout_playing(ball);
+                            penalty_shootout_playing(ball, goals);
                         }
                         else {
                             // Switch gamemode statemachine based on GameController mode
                             auto mode = game_state.data.mode.value;
                             switch (mode) {
-                                case GameMode::PENALTY_SHOOTOUT: penalty_shootout(phase, ball); break;
-                                case GameMode::NORMAL: normal(game_state, phase, ball); break;
-                                case GameMode::OVERTIME: normal(game_state, phase, ball); break;
+                                case GameMode::PENALTY_SHOOTOUT: penalty_shootout(phase, ball, goals); break;
+                                case GameMode::NORMAL: normal(game_state, phase, ball, goals); break;
+                                case GameMode::OVERTIME: normal(game_state, phase, ball, goals); break;
                                 default: log<NUClear::WARN>("Game mode unknown.");
                             }
                         }
@@ -247,13 +255,15 @@ namespace module::behaviour::strategy {
     }
 
     // ********************PENALTY GAMEMODE STATE MACHINE********************************
-    void SoccerStrategy::penalty_shootout(const Phase& phase, const std::shared_ptr<const FilteredBall>& ball) {
+    void SoccerStrategy::penalty_shootout(const Phase& phase,
+                                          const std::shared_ptr<const FilteredBall>& ball,
+                                          const std::shared_ptr<const VisionGoals>& goals) {
         switch (phase.value) {
-            case Phase::INITIAL: penalty_shootout_initial(); break;      // Happens at beginning.
-            case Phase::READY: penalty_shootout_ready(); break;          // Should not happen.
-            case Phase::SET: penalty_shootout_set(); break;              // Happens on beginning of each kick try.
-            case Phase::PLAYING: penalty_shootout_playing(ball); break;  // Either kicking or goalie.
-            case Phase::TIMEOUT: penalty_shootout_timeout(); break;      // A pause in playing. Not in simulation.
+            case Phase::INITIAL: penalty_shootout_initial(); break;  // Happens at beginning.
+            case Phase::READY: penalty_shootout_ready(); break;      // Should not happen.
+            case Phase::SET: penalty_shootout_set(); break;          // Happens on beginning of each kick try.
+            case Phase::PLAYING: penalty_shootout_playing(ball, goals); break;  // Either kicking or goalie.
+            case Phase::TIMEOUT: penalty_shootout_timeout(); break;    // A pause in playing. Not in simulation.
             case Phase::FINISHED: penalty_shootout_finished(); break;  // Happens when penalty shootout completely ends.
             default: log<NUClear::WARN>("Unknown penalty shootout gamemode phase.");
         }
@@ -262,7 +272,8 @@ namespace module::behaviour::strategy {
     // ********************NORMAL GAMEMODE STATE MACHINE********************************
     void SoccerStrategy::normal(const message::input::GameState& game_state,
                                 const Phase& phase,
-                                const std::shared_ptr<const FilteredBall>& ball) {
+                                const std::shared_ptr<const FilteredBall>& ball,
+                                const std::shared_ptr<const VisionGoals>& goals) {
         switch (phase.value) {
             // Beginning of game and half time
             case Phase::INITIAL: normal_initial(); break;
@@ -271,7 +282,7 @@ namespace module::behaviour::strategy {
             // Happens after ready. Robot should stop moving.
             case Phase::SET: normal_set(); break;
             // After set, main game where we should walk to ball and kick.
-            case Phase::PLAYING: normal_playing(ball); break;
+            case Phase::PLAYING: normal_playing(ball, goals); break;
             case Phase::FINISHED: normal_finished(); break;  // Game has finished.
             case Phase::TIMEOUT: normal_timeout(); break;    // A pause in playing. Not in simulation.
             default: log<NUClear::WARN>("Unknown normal gamemode phase.");
@@ -296,19 +307,20 @@ namespace module::behaviour::strategy {
         current_state = Behaviour::State::SET;
     }
 
-    void SoccerStrategy::penalty_shootout_playing(const std::shared_ptr<const FilteredBall>& ball) {
+    void SoccerStrategy::penalty_shootout_playing(const std::shared_ptr<const FilteredBall>& ball,
+                                                  const std::shared_ptr<const VisionGoals>& goals) {
         // Execute penalty kick script once if we haven't yet, and if we are not goalie (team_kicking_off will not be us
         // if we are the goalie)
         log<NUClear::DEBUG>("Entering penalty shootout playing...");
         if (team_kicking_off == GameEvents::Context::TEAM) {
             // Go kick the ball directly into the goals... i.e. regular playing
-            play(ball);
+            play(ball, goals);
             current_state = Behaviour::State::SHOOTOUT;
         }
         else {
             // TODO(BehaviourTeam): Can add a dive or walk in-front of the ball here to attempt to block in future
             stand_still();
-            current_state = Behaviour::State::GOALIE_WALK;
+            current_state = Behaviour::State::GOALIE_WALK;  //
         }
     }
 
@@ -368,7 +380,8 @@ namespace module::behaviour::strategy {
         current_state    = Behaviour::State::SET;
     }
 
-    void SoccerStrategy::normal_playing(const std::shared_ptr<const FilteredBall>& ball) {
+    void SoccerStrategy::normal_playing(const std::shared_ptr<const FilteredBall>& ball,
+                                        const std::shared_ptr<const VisionGoals>& goals) {
         if (penalised() && !cfg.force_playing) {
             // We are penalised, stand still
             stand_still();
@@ -382,10 +395,9 @@ namespace module::behaviour::strategy {
                 // current_state = Behaviour::State::GOALIE_WALK;
             }
             else if (ball && NUClear::clock::now() - ball->time_of_measurement < cfg.ball_last_seen_max_time) {
-                // We are not goalie or the ball is close enough, request walk planner to walk to the ball if
-                // ball has been seen recently
-
-                play(ball);
+                // We are not goalie, ball has been seen recently
+                // request walk planner to walk to ball
+                play(ball, goals);
                 current_state = Behaviour::State::WALK_TO_BALL;
             }
             else {
@@ -421,7 +433,8 @@ namespace module::behaviour::strategy {
     void SoccerStrategy::unpenalised_localisation_reset() {
         emit(std::make_unique<ResetRobotHypotheses>());
 
-        // TODO(BehaviourTeam): This should do some random distribution or something as we don't know where the ball is
+        // TODO(BehaviourTeam): This should do some random distribution or something as we don't know where the
+        // ball is
         auto ball_reset        = std::make_unique<ResetBallHypotheses>();
         ball_reset->self_reset = true;
         emit(ball_reset);
@@ -450,13 +463,32 @@ namespace module::behaviour::strategy {
         }
     }
 
-    void SoccerStrategy::play(const std::shared_ptr<const FilteredBall>& ball) {
+    // void SoccerStrategy::line_up_goals(const std::shared_ptr<const VisionGoals>& goals) {}
+
+    void SoccerStrategy::play(const std::shared_ptr<const FilteredBall>& ball,
+                              const std::shared_ptr<const VisionGoals>& goals) {
         float absolute_yaw_angle = std::abs(std::atan2(ball->rBTt.y(), ball->rBTt.x()));
         float distance_to_ball   = ball->rBTt.head(2).norm();
-        if (ball && distance_to_ball < cfg.kicking_distance_threshold
-            && absolute_yaw_angle < cfg.kicking_angle_threshold) {
-            // We are in range, lets kick
-            emit(std::make_unique<KickScriptCommand>(LimbID::RIGHT_LEG, KickCommandType::NORMAL));
+
+        // If we are in range of the ball and within kicking angle. and we are not in a penalty shootout
+        if (ball && distance_to_ball < cfg.kicking_distance_threshold && current_state != Behaviour::State::SHOOTOUT) {
+            // NOTE: Removed kicking angle for now (absolute_yaw_angle < cfg.kicking_angle_threshold)
+            // if we are close to the goal, rotate to line up the kick
+            log("dist to posts: ", dist_to_posts);
+            log("vector x to centre posts: ", posts_centre.x());
+            log("vector y to centre posts: ", posts_centre.y());
+            // TODO:
+            if (std::abs(posts_centre.y() < 0.1)) {
+                // Request walk path planner to rotate around the ball
+                // TODO: add in a rotation direction parameter
+                log("Requesting rotate around ball.");
+                emit(std::make_unique<MotionCommand>(utility::behaviour::RotateAroundBall()));
+            }
+            // else, just kick
+            else {
+                emit(std::make_unique<KickScriptCommand>(LimbID::RIGHT_LEG, KickCommandType::NORMAL));
+            }
+            // absolute_yaw_angle < cfg.kicking_angle_threshold
         }
         else {
             // Request walk planner to walk to the ball
