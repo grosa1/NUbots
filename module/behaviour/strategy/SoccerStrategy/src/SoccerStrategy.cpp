@@ -458,12 +458,7 @@ namespace module::behaviour::strategy {
         float distance_to_ball   = ball->rBTt.head(2).norm();
 
         // If we are out of the goal search range
-        if (ball && distance_to_ball > cfg.goal_search_distance_threshold) {
-            // Request walk planner to walk to the ball
-            log("Just walk to ball.");
-            emit(std::make_unique<MotionCommand>(utility::behaviour::BallApproach()));
-        }
-        else {
+        if (ball && distance_to_ball < cfg.goal_search_distance_threshold) {
             // DEBUG - LC
             log("dist to posts: ", dist_to_posts);
             log("vector x to centre posts: ", posts_centre.x());
@@ -474,7 +469,7 @@ namespace module::behaviour::strategy {
             // else, approach
 
             // If the goals are not within a certain angle of the robot's torso, rotate around the ball
-            if (std::abs(posts_centre.y()) < cfg.goal_alignment_angle) {
+            if (std::abs(posts_centre.y()) > cfg.goal_alignment_angle) {
                 // Request walk path planner to rotate around the ball
                 if (true) {
                     log("Requesting rotate around ball.");
@@ -495,6 +490,11 @@ namespace module::behaviour::strategy {
                 log("Aligned and walk to ball.");
                 emit(std::make_unique<MotionCommand>(utility::behaviour::BallApproach()));
             }
+        }
+        else {
+            // Request walk planner to walk to the ball
+            log("Just walk to ball.");
+            emit(std::make_unique<MotionCommand>(utility::behaviour::BallApproach()));
         }
 
         if (log_level <= NUClear::DEBUG) {
