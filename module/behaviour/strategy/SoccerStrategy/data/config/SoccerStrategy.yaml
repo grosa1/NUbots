@@ -1,4 +1,4 @@
-log_level: DEBUG
+log_level: WARN
 
 ball_last_seen_max_time: 2 # time in seconds
 goal_last_seen_max_time: 10 # time in seconds
@@ -29,7 +29,13 @@ force_penalty_shootout: false
 walk_to_ready_time: 20
 
 # Distance to begin the kick on the ball while normally playing (in metres)
-kicking_distance_threshold: 0.35
+kicking_distance_threshold: 0.3
 
 # Angle from the front to begin kicking the ball (in radians) absolute value so either direction
 kicking_angle_threshold: 0.5
+
+# Distance from the ball to begin searching for goals
+goal_search_distance_threshold: 1.00
+
+# Angle from torso space to the center of the goal before we will approach the ball
+goal_alignment_angle: 0.3

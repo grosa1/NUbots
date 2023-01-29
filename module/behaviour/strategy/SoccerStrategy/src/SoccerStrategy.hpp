@@ -60,11 +60,13 @@ namespace module::behaviour::strategy {
             float goalie_side_walk_angle_threshold = 0.0f;
             NUClear::clock::duration localisation_interval{};
             NUClear::clock::duration localisation_duration{};
-            bool force_playing               = false;
-            bool force_penalty_shootout      = false;
-            int walk_to_ready_time           = 0;
-            float kicking_distance_threshold = 0.0f;
-            float kicking_angle_threshold    = 0.0f;
+            bool force_playing                   = false;
+            bool force_penalty_shootout          = false;
+            int walk_to_ready_time               = 0;
+            float kicking_distance_threshold     = 0.0f;
+            float kicking_angle_threshold        = 0.0f;
+            float goal_search_distance_threshold = 0.0f;
+            float goal_alignment_angle           = 0.0f;
         } cfg;
 
         /// @brief Flag to determine whether the ball is on the left or right side of the robot
