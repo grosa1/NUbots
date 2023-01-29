@@ -78,6 +78,9 @@ namespace module::behaviour::planning {
             cfg.walk_to_ready_rotation     = config["walk_to_ready_rotation"].as<float>();
             cfg.walk_path_planner_priority = config["walk_path_planner_priority"].as<float>();
             cfg.ball_y_offset              = config["ball_y_offset"].as<float>();
+            cfg.rotate_around_ball_speed   = config["rotate_around_ball_speed"].as<float>();
+            cfg.rotate_around_ball_speed_x = config["rotate_around_ball_speed_x"].as<float>();
+            cfg.rotate_around_ball_speed_y = config["rotate_around_ball_speed_y"].as<float>();
         });
 
         emit<Scope::INITIALIZE>(std::make_unique<RegisterAction>(
@@ -184,7 +187,11 @@ namespace module::behaviour::planning {
     void SimpleWalkPathPlanner::rotate_around_ball(bool clockwise) {
         // Determine the direction of rotation
         int sign = clockwise ? -1 : 1;
-
+        // DEBUGS - LC
+        // NUClear::log<NUClear::DEBUG>("SWPP rotate around ball function");
+        // NUClear::log<NUClear::DEBUG>("rotate around ball x: ", cfg.rotate_around_ball_speed_x);
+        // NUClear::log<NUClear::DEBUG>("rotate around ball y: ", cfg.rotate_around_ball_speed_y);
+        // NUClear::log<NUClear::DEBUG>("rotate around ball: ", cfg.rotate_around_ball_speed);
         std::unique_ptr<WalkCommand> command =
             std::make_unique<WalkCommand>(subsumption_id,
                                           Eigen::Vector3d(cfg.rotate_around_ball_speed_x,
