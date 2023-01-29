@@ -126,7 +126,9 @@ namespace module::behaviour::strategy {
 
             cfg.kicking_distance_threshold = config["kicking_distance_threshold"].as<float>();
 
-            cfg.kicking_angle_threshold = config["kicking_angle_threshold"].as<float>();
+            cfg.kicking_angle_threshold        = config["kicking_angle_threshold"].as<float>();
+            cfg.goal_search_distance_threshold = config["goal_search_distance_threshold"].as<float>();
+            cfg.goal_alignment_angle           = config["goal_alignment_angle"].as<float>();
         });
 
         on<Trigger<VisionGoals>>().then([this](const VisionGoals& goals) {
@@ -147,16 +149,6 @@ namespace module::behaviour::strategy {
                                     posts_centre.y(),
                                     posts_centre.z()));
                 }
-
-                // for (size_t i = 0; i < goals.goals.size(); i++) {
-                //     // log("Distance to goals " << i << ": ", goals.goals[i].post.distance);
-                //     log(fmt::format("Distance to goals {}: ", i), goals.goals[i].post.distance);
-                //     log(fmt::format("Goal bottom vector {} x:{} y:{} z:{}",
-                //                     i,
-                //                     goals.goals[i].post.bottom.x(),
-                //                     goals.goals[i].post.bottom.y(),
-                //                     goals.goals[i].post.bottom.z()));
-                // }
             }
         });
 
@@ -456,43 +448,53 @@ namespace module::behaviour::strategy {
         }
     }
 
-    // TODO: passing goals pointer unneccessary with a global variable
+    // TODO: passing goals pointer unneccessary with a global variable? (might be necessary for a requested goal search)
+    // TODO: add in a rotation direction parameter
+    // TODO: figure out which way to rotate based on goal positions (true is just for testing)
+    // TODO: Test triggering the ball distance sooner, once we are lined up, we can walk closer
+    // TODO: Another else if to account for a bad kicking angle, rotate on the spot or something - LC
     void SoccerStrategy::play(const std::shared_ptr<const FilteredBall>& ball) {
         float absolute_yaw_angle = std::abs(std::atan2(ball->rBTt.y(), ball->rBTt.x()));
         float distance_to_ball   = ball->rBTt.head(2).norm();
 
-        // If we are in range of the ball and within kicking angle. and we are not in a penalty shootout (might not need
-        // this)
-        if (ball && distance_to_ball < cfg.kicking_distance_threshold && current_state != Behaviour::State::SHOOTOUT) {
-            // NOTE: Removed kicking angle for now (absolute_yaw_angle < cfg.kicking_angle_threshold)
-            // if we are close to the goal, rotate to line up the kick
+        // If we are out of the goal search range
+        if (ball && distance_to_ball > cfg.goal_search_distance_threshold) {
+            // Request walk planner to walk to the ball
+            log("Just walk to ball.");
+            emit(std::make_unique<MotionCommand>(utility::behaviour::BallApproach()));
+        }
+        else {
+            // DEBUG - LC
             log("dist to posts: ", dist_to_posts);
             log("vector x to centre posts: ", posts_centre.x());
             log("vector y to centre posts: ", posts_centre.y());
-            // TODO:
-            if (std::abs(posts_centre.y() < 0.1)) {
+            // Look for the goals
+
+            // If the goals are not aligned, rotate,
+            // else, approach
+
+            // If the goals are not within a certain angle of the robot's torso, rotate around the ball
+            if (std::abs(posts_centre.y()) < cfg.goal_alignment_angle) {
                 // Request walk path planner to rotate around the ball
-                // TODO: add in a rotation direction parameter
-                log("Requesting rotate around ball.");
-                // TODO: figure out which way to rotate based on goal positions (true is just for testing)
-                // TODO: Test triggering the ball distance sooner, once we are lined up, we can walk closer
                 if (true) {
+                    log("Requesting rotate around ball.");
                     emit(std::make_unique<MotionCommand>(utility::behaviour::RotateAroundBall(true)));
                 }
                 else {
                     emit(std::make_unique<MotionCommand>(utility::behaviour::RotateAroundBall(false)));
                 }
             }
-            // else, just kick
-            else {
+            // If we are within kicking distance of the ball and have a good kicking angle
+            else if (distance_to_ball < cfg.kicking_distance_threshold
+                     && absolute_yaw_angle < cfg.kicking_angle_threshold) {
                 emit(std::make_unique<KickScriptCommand>(LimbID::RIGHT_LEG, KickCommandType::NORMAL));
             }
-            // absolute_yaw_angle < cfg.kicking_angle_threshold
-        }
-        else {
-            // Request walk planner to walk to the ball
-            log("Requesting walk to ball.");
-            emit(std::make_unique<MotionCommand>(utility::behaviour::BallApproach()));
+            // We are aligned with a goal
+            else {
+                // Request walk planner to walk to the ball
+                log("Aligned and walk to ball.");
+                emit(std::make_unique<MotionCommand>(utility::behaviour::BallApproach()));
+            }
         }
 
         if (log_level <= NUClear::DEBUG) {

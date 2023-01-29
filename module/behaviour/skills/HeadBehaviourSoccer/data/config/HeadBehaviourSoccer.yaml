@@ -1,4 +1,4 @@
-log_level: WARN
+log_level: DEBUG
 
 # Search path positions
 min_yaw: &min_yaw -0.7
@@ -14,3 +14,9 @@ fixation_time: 2
 
 # Added pitch offset to ball tracking
 pitch_offset: -0.5
+
+# Distance away from the ball where we should look up for a goal measurement
+goal_search_distance_threshold: 1.00
+
+# Time between glances at goals when lining up a ball (allows robot to fix on the ball)
+goal_search_timeout: 5

@@ -43,6 +43,11 @@ namespace module::behaviour::skills {
             float pitch_offset  = 0.0f;
             /// @brief List of positions for search
             std::vector<Eigen::Vector2d> search_positions;
+
+            /// @brief Distance away from the ball where we should look up for a goal measurement
+            float goal_search_distance_threshold = 0.0f;
+            /// @brief Time between glancing up to get a goal measurement
+            float goal_search_timeout = 0.0f;
         } cfg;
 
         /// @brief Index in the list of search positions
@@ -56,6 +61,16 @@ namespace module::behaviour::skills {
 
         /// @brief Time since last ball seen
         NUClear::clock::time_point ball_last_measured = NUClear::clock::now();
+
+        /// @brief Time since last glance at the goals, used when lining up the ball
+        NUClear::clock::time_point goal_last_measured = NUClear::clock::now();
+
+        /// @brief brief description
+        float last_look_for_goal = 0;
+
+        /// @brief distance to the ball
+        float distance_to_ball = 0;
+
 
     public:
         explicit HeadBehaviourSoccer(std::unique_ptr<NUClear::Environment> environment);
