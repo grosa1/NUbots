@@ -91,43 +91,39 @@ namespace module::behaviour::skills {
                       if (!is_getting_up) {
                           // If we see a ball
                           if (ball && NUClear::clock::now() - ball->time_of_measurement < cfg.search_timeout) {
-                              NUClear::log<NUClear::DEBUG>("HB - Looking at ball");
-                              // We can see the ball, lets look at it
-                              Eigen::Vector3d rBCc                 = ball->rBCc.cast<double>();
-                              Eigen::Vector2d angles               = screenAngularFromObjectDirection(rBCc);
-                              std::unique_ptr<HeadCommand> command = std::make_unique<HeadCommand>();
-                              command->yaw                         = angles[0];
-                              command->pitch                       = angles[1] + cfg.pitch_offset;
-                              command->robot_space                 = true;
-                              command->smooth                      = true;
-                              emit(std::move(command));
-                          }
-                          //   NUClear::log<NUClear::DEBUG>("HB - standing and sees ball");
-                          // If we can't see the goals
-                          //   else if (ball && !goals && ball->rBTt.norm() < cfg.goal_search_distance_threshold) {
-                          //     NUClear::log<NUClear::DEBUG>("HB - Looking for a goal");
-                          //       //   NUClear::log<NUClear::DEBUG>("HB - Has goals");
-                          //       //   NUClear::log<NUClear::DEBUG>("HB - goal last measured: ", goal_last_measured);
-                          //       //   NUClear::log<NUClear::DEBUG>("HB - Last look for goal: ", last_look_for_goal);
-                          //       //   NUClear::log<NUClear::DEBUG>("HB - Search timeout: ", cfg.goal_search_timeout);
-                          //       last_look_for_goal = std::chrono::duration_cast<std::chrono::duration<float>>(
-                          //                                NUClear::clock::now() - goal_last_measured)
-                          //                                .count();
-                          //       // If we haven't looked up for a goal measurement for a certain time and
-                          //       // if close to the ball but out of kick distance, look up and try for a goal
-                          //       // measurement.
-                          //       if (last_look_for_goal > cfg.goal_search_timeout) {
-                          //           NUClear::log<NUClear::DEBUG>("HB - Looking for a goal");
-                          //           goal_last_measured                   = NUClear::clock::now();
-                          //           std::unique_ptr<HeadCommand> command = std::make_unique<HeadCommand>();
-                          //           command->yaw                         = 0.7;
-                          //           command->pitch                       = 0.4;
-                          //           command->robot_space                 = true;
-                          //           command->smooth                      = true;
-                          //           emit(std::move(command));
-                          //       }
-                          //   }
-                          // Ball hasn't been seen in a while. Look around using search positions
+                              // We can see a ball but we haven't seen the goal in a while
+                              // when we last tried to look for a goal
+                              last_look_for_goal = std::chrono::duration_cast<std::chrono::duration<float>>(
+                                                       NUClear::clock::now() - goal_last_measured)
+                                                       .count();
+                              if (!goals && ball->rBTt.norm() < cfg.goal_search_distance_threshold
+                                  && last_look_for_goal > cfg.goal_search_timeout) {
+                                  NUClear::log<NUClear::DEBUG>("HB - Looking for a goal");
+                                  //   NUClear::log<NUClear::DEBUG>("HB - goal last measured: ", goal_last_measured);
+
+                                  // NUClear::log<NUClear::DEBUG>("HB - Search timeout: ", cfg.goal_search_timeout);
+                                  goal_last_measured                   = NUClear::clock::now();
+                                  std::unique_ptr<HeadCommand> command = std::make_unique<HeadCommand>();
+                                  command->yaw                         = 0.0;
+                                  command->pitch                       = 0.2;
+                                  command->robot_space                 = true;
+                                  command->smooth                      = true;
+                                  emit(std::move(command));
+                              }
+                              else {
+                                  // We can see the ball, lets look at it
+                                  NUClear::log<NUClear::DEBUG>("HB - Looking at ball");
+                                  Eigen::Vector3d rBCc                 = ball->rBCc.cast<double>();
+                                  Eigen::Vector2d angles               = screenAngularFromObjectDirection(rBCc);
+                                  std::unique_ptr<HeadCommand> command = std::make_unique<HeadCommand>();
+                                  command->yaw                         = angles[0];
+                                  command->pitch                       = angles[1] + cfg.pitch_offset;
+                                  command->robot_space                 = true;
+                                  command->smooth                      = true;
+                                  emit(std::move(command));
+                              }
+
+                          }  // Ball hasn't been seen in a while. Look around using search positions
                           else {
                               NUClear::log<NUClear::DEBUG>("HB - Searching for ball");
                               float time_since_last_search_moved =
