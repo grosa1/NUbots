@@ -135,19 +135,40 @@ namespace module::behaviour::strategy {
             if (!goals.goals.empty()) {
                 goal_last_measured = NUClear::clock::now();
                 log("Goal detected");
+
                 // goal post tests. Adding the two goal vectors should give the centre.
                 // How to make to robot face that direction?
+
                 // if we have found two posts
-                if (goals.goals.size() > 1) {
-                    // Note: only using the first two pairs of posts found
-                    Eigen::Vector3f post_1 = goals.goals[0].post.bottom;
-                    Eigen::Vector3f post_2 = goals.goals[1].post.bottom;
-                    posts_centre           = (post_1 + post_2);
-                    dist_to_posts          = (goals.goals[0].post.distance + goals.goals[1].post.distance) / 2;
-                    log(fmt::format("Center of post vector x:{} y:{} z:{} ",
-                                    posts_centre.x(),
-                                    posts_centre.y(),
-                                    posts_centre.z()));
+                // if (goals.goals.size() > 1) {
+                //     // Note: only using the first two pairs of posts found
+                //     Eigen::Vector3f post_1 = goals.goals[0].post.bottom;
+                //     Eigen::Vector3f post_2 = goals.goals[1].post.bottom;
+                //     posts_centre           = (post_1 + post_2);
+                //     dist_to_posts          = (goals.goals[0].post.distance + goals.goals[1].post.distance) / 2;
+                //     log(fmt::format("Center of post vector x:{} y:{} z:{} ",
+                //                     posts_centre.x(),
+                //                     posts_centre.y(),
+                //                     posts_centre.z()));
+                // }
+
+                // Sum the goal post vectors, and divide by number of vectors to get the centre
+
+                // DEBUG: Test to see the type of goal messages
+                // std::string test                   = "";
+                if (goals.goals.size() >= 2) {
+                    int goal_count                     = 0;
+                    Eigen::Vector3f total_goal_vectors = Eigen::Vector3f::Zero();
+                    for (size_t i = 0; i < goals.goals.size(); i++) {
+                        // Add the left and right goal vector values
+                        if (goals.goals.at(i).side.value == message::vision::Goal::Side::LEFT
+                            || goals.goals.at(i).side.value == message::vision::Goal::Side::RIGHT) {
+
+                            total_goal_vectors += goals.goals[i].post.bottom;
+                            goal_count++;
+                        }
+                    }
+                    posts_centre = total_goal_vectors / goal_count;
                 }
             }
         });
@@ -457,22 +478,25 @@ namespace module::behaviour::strategy {
         float absolute_yaw_angle = std::abs(std::atan2(ball->rBTt.y(), ball->rBTt.x()));
         float distance_to_ball   = ball->rBTt.head(2).norm();
 
-        // If we are out of the goal search range
+        // If we are in the goal search range of the ball
         if (ball && distance_to_ball < cfg.goal_search_distance_threshold) {
             // DEBUG - LC
-            log("dist to posts: ", dist_to_posts);
-            log("vector x to centre posts: ", posts_centre.x());
-            log("vector y to centre posts: ", posts_centre.y());
+            // log("dist to posts: ", dist_to_posts);
+            // log("vector x to centre posts: ", posts_centre.x());
+            // log("vector y to centre posts: ", posts_centre.y());
+            // log("abs vector y to centre posts: ", std::abs(posts_centre.y()));
+            // log("goal alignment angle: ", cfg.goal_alignment_angle);
             // Look for the goals
 
             // If the goals are not aligned, rotate,
             // else, approach
 
             // If the goals are not within a certain angle of the robot's torso, rotate around the ball
-            if (std::abs(posts_centre.y()) > cfg.goal_alignment_angle) {
+            // NOTE: Comparison is a bit dodgy. Rounding or something? - LC
+            if (std::abs(posts_centre.y()) < cfg.goal_alignment_angle) {
                 // Request walk path planner to rotate around the ball
                 if (true) {
-                    log("Requesting rotate around ball.");
+                    // log("Requesting rotate around ball.");
                     emit(std::make_unique<MotionCommand>(utility::behaviour::RotateAroundBall(true)));
                 }
                 else {
