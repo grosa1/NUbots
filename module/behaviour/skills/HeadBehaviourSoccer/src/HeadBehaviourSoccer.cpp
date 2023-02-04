@@ -91,37 +91,16 @@ namespace module::behaviour::skills {
                       if (!is_getting_up) {
                           // If we see a ball
                           if (ball && NUClear::clock::now() - ball->time_of_measurement < cfg.search_timeout) {
-                              // We can see a ball but we haven't seen the goal in a while
-                              // when we last tried to look for a goal
-                              last_look_for_goal = std::chrono::duration_cast<std::chrono::duration<float>>(
-                                                       NUClear::clock::now() - goal_last_measured)
-                                                       .count();
-                              if (!goals && ball->rBTt.norm() < cfg.goal_search_distance_threshold
-                                  && last_look_for_goal > cfg.goal_search_timeout) {
-                                  NUClear::log<NUClear::DEBUG>("HB - Looking for a goal");
-                                  //   NUClear::log<NUClear::DEBUG>("HB - goal last measured: ", goal_last_measured);
-
-                                  // NUClear::log<NUClear::DEBUG>("HB - Search timeout: ", cfg.goal_search_timeout);
-                                  goal_last_measured                   = NUClear::clock::now();
-                                  std::unique_ptr<HeadCommand> command = std::make_unique<HeadCommand>();
-                                  command->yaw                         = 0.0;
-                                  command->pitch                       = 0.2;
-                                  command->robot_space                 = true;
-                                  command->smooth                      = true;
-                                  emit(std::move(command));
-                              }
-                              else {
-                                  // We can see the ball, lets look at it
-                                  NUClear::log<NUClear::DEBUG>("HB - Looking at ball");
-                                  Eigen::Vector3d rBCc                 = ball->rBCc.cast<double>();
-                                  Eigen::Vector2d angles               = screenAngularFromObjectDirection(rBCc);
-                                  std::unique_ptr<HeadCommand> command = std::make_unique<HeadCommand>();
-                                  command->yaw                         = angles[0];
-                                  command->pitch                       = angles[1] + cfg.pitch_offset;
-                                  command->robot_space                 = true;
-                                  command->smooth                      = true;
-                                  emit(std::move(command));
-                              }
+                              // We can see the ball, lets look at it
+                              NUClear::log<NUClear::DEBUG>("HB - Looking at ball");
+                              Eigen::Vector3d rBCc                 = ball->rBCc.cast<double>();
+                              Eigen::Vector2d angles               = screenAngularFromObjectDirection(rBCc);
+                              std::unique_ptr<HeadCommand> command = std::make_unique<HeadCommand>();
+                              command->yaw                         = angles[0];
+                              command->pitch                       = angles[1] + cfg.pitch_offset;
+                              command->robot_space                 = true;
+                              command->smooth                      = true;
+                              emit(std::move(command));
 
                           }  // Ball hasn't been seen in a while. Look around using search positions
                           else {
