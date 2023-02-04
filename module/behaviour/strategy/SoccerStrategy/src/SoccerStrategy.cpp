@@ -495,6 +495,10 @@ namespace module::behaviour::strategy {
             // NOTE: Comparison is a bit dodgy. Rounding or something? - LC
             if (std::abs(posts_centre.y()) < cfg.goal_alignment_angle) {
                 // Request walk path planner to rotate around the ball
+                // TODO: Use the angle to determine which direction to rotate
+                // TODO (maybe later): Adjust robot rotation as the ball leaves the robot's centre
+                // TODO (maybe later): Adjust the robot strafe and forward speed to keep the ball at a certain distance
+                // TODO (maybe later):
                 if (true) {
                     // log("Requesting rotate around ball.");
                     emit(std::make_unique<MotionCommand>(utility::behaviour::RotateAroundBall(true)));
