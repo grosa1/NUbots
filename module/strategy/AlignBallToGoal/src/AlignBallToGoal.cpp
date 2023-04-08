@@ -8,6 +8,7 @@ namespace module::strategy {
     using extension::Configuration;
     using message::localisation::Field;
     using message::localisation::FilteredBall;
+    using message::planning::TurnAroundBall;
     using AlignBallToGoalTask = message::strategy::AlignBallToGoal;
 
     AlignBallToGoal::AlignBallToGoal(std::unique_ptr<NUClear::Environment> environment)
@@ -21,12 +22,18 @@ namespace module::strategy {
         //
         on<Provide<AlignBallToGoalTask>, With<FilteredBall>, With<Field>, Every<30, Per<std::chrono::seconds>>>().then(
             [this](const FilteredBall& ball, const Field& field) {
+                // Get the robot's 2d position on the field
+                Eigen::Vector2d robot_pos = field.Hfw.block<2, 1>(0, 2);
+                NUClear::log("robot_pos x:", robot_pos.x());
+                NUClear::log("robot_pos y:", robot_pos.y());
                 // Do stuff
                 // field has the robots location
                 // make a vector from the robot to the goal and compare it to
                 // the robots forward vector
-                // NOTE: How to use the field message for the robots position?
-                // NOTE: How to use the field description
+                //
+                //
+                //
+                emit<Task>(std::make_unique<TurnAroundBall>(true));
             });
     }
 
