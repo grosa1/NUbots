@@ -22,17 +22,16 @@ namespace module::strategy {
         //
         on<Provide<AlignBallToGoalTask>, With<FilteredBall>, With<Field>, Every<30, Per<std::chrono::seconds>>>().then(
             [this](const FilteredBall& ball, const Field& field) {
-                // Get the robot's 2d position on the field
-                Eigen::Vector2d robot_pos = field.Hfw.block<2, 1>(0, 2);
+                // Get the robot's position (pose) on the field
+                Eigen::Vector3d robot_pos = field.Hfw.block<3, 1>(0, 0);
+                // Compute the angle from the robot's forward direction to the x axis (opponent goal)
                 NUClear::log("robot_pos x:", robot_pos.x());
                 NUClear::log("robot_pos y:", robot_pos.y());
+                // NOTE: field x axis is towards the opponent's goal
                 // Do stuff
                 // field has the robots location
                 // make a vector from the robot to the goal and compare it to
                 // the robots forward vector
-                //
-                //
-                //
                 emit<Task>(std::make_unique<TurnAroundBall>(true));
             });
     }
