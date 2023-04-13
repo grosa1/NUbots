@@ -28,9 +28,9 @@ namespace module::strategy {
             cfg.walk_to_ready_rotation = config["walk_to_ready_rotation"].as<float>();
         });
 
-        on<Provide<ReadyTask>, With<Stability>, Every<30, Per<std::chrono::seconds>>>().then(
-            [this](const RunInfo& info, const Stability& stability) {
-                if (info.run_reason == RunInfo::RunReason::NEW_TASK) {
+        on<Provide<ReadyTask>, Uses<Walk>, With<Stability>, Every<30, Per<std::chrono::seconds>>>().then(
+            [this](const Uses<Walk>& walk, const Stability& stability) {
+                if (walk.run_state != GroupInfo::RunState::RUNNING) {
                     // Set the timer and emit a walk Task
                     start_ready_time = NUClear::clock::now();
                     emit<Task>(std::make_unique<Walk>(Eigen::Vector3f(cfg.walk_to_ready_speed_x,

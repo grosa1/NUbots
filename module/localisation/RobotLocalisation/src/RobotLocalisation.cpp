@@ -5,10 +5,14 @@
 
 #include "extension/Configuration.hpp"
 
+#include "message/behaviour/state/Stability.hpp"
+#include "message/support/FieldDescription.hpp"
+
 namespace module::localisation {
 
     using extension::Configuration;
 
+    using message::behaviour::state::Stability;
     using message::localisation::Field;
     using message::motion::DisableWalkEngineCommand;
     using message::motion::EnableWalkEngineCommand;
@@ -190,34 +194,18 @@ namespace module::localisation {
             last_time_update_time = NUClear::clock::now();
         });
 
-        on<Trigger<WalkCommand>>().then([this](const WalkCommand& wc) {
-            if (!walk_engine_enabled) {
-                const auto current_time = NUClear::clock::now();
-                last_time_update_time   = current_time;
-                walk_engine_enabled     = true;
-            }
-            walk_command = wc.command;
-        });
-
-        on<Trigger<EnableWalkEngineCommand>>().then([this]() {
-            walk_engine_enabled     = true;
-            const auto current_time = NUClear::clock::now();
-            last_time_update_time   = current_time;
-        });
-
-        on<Trigger<DisableWalkEngineCommand>>().then([this]() {
-            walk_command        = Eigen::Vector3d::Zero();
-            walk_engine_enabled = false;
-        });
-
-        on<Trigger<StopCommand>>().then([this]() {
-            walk_command        = Eigen::Vector3d::Zero();
-            walk_engine_enabled = false;
-        });
-
         on<Trigger<ExecuteGetup>>().then([this]() { falling = true; });
 
         on<Trigger<KillGetup>>().then([this]() { falling = false; });
+
+        on<Trigger<Stability>>().then([this](const Stability& stability) {
+            if (stability == Stability::FALLEN) {
+                falling = true;
+            }
+            else {
+                falling = false;
+            }
+        });
 
         on<Trigger<FieldLines>>().then("Particle Filter", [this](const FieldLines& field_lines) {
             if (!falling) {
@@ -277,9 +265,9 @@ namespace module::localisation {
 
                 // Build and emit the field message
                 auto field(std::make_unique<Field>());
-                Eigen::Isometry2d Hfw(Eigen::Isometry2d::Identity());
-                Hfw.translation() = Eigen::Vector2d(state.x(), state.y());
-                Hfw.linear()      = Eigen::Rotation2Dd(state.z()).toRotationMatrix();
+                Eigen::Isometry3d Hfw(Eigen::Isometry3d::Identity());
+                Hfw.translation() = Eigen::Vector3d(state.x(), state.y(), 0);
+                Hfw.linear()      = Eigen::AngleAxisd(state.z(), Eigen::Vector3d::UnitZ()).toRotationMatrix();
                 field->Hfw        = Hfw.matrix();
                 field->covariance = covariance;
                 emit(field);
@@ -298,18 +286,15 @@ namespace module::localisation {
 
     Eigen::Vector2i RobotLocalisation::position_in_map(const Eigen::Matrix<double, 3, 1> particle,
                                                        const Eigen::Vector2d rPRw) {
-        // Create transform from world {w} to field {f} space
+        // Transform observations from world {w} to field {f} space
         Eigen::Isometry2d Hfw;
-        Hfw.translation() = Eigen::Vector2d(particle(0), particle(1));
-        Hfw.linear()      = Eigen::Rotation2Dd(particle(2)).toRotationMatrix();
-
-        // Transform the observations from robot space {r} to field space {f}
+        Hfw.translation()    = Eigen::Vector2d(particle(0), particle(1));
+        Hfw.linear()         = Eigen::Rotation2Dd(particle(2)).toRotationMatrix();
         Eigen::Vector2d rPFf = Hfw * rPRw;
 
         // Get the associated position/index in the map [x, y]
         int x_map = fieldline_map.get_length() / 2 - std::round(rPFf(1) / cfg.grid_size);
         int y_map = fieldline_map.get_width() / 2 + std::round(rPFf(0) / cfg.grid_size);
-
         return Eigen::Vector2i(x_map, y_map);
     }
 
@@ -327,6 +312,7 @@ namespace module::localisation {
                 weight += std::exp(-0.5 * std::pow(distance_error_norm / cfg.measurement_noise, 2))
                           / (2 * M_PI * std::pow(cfg.measurement_noise, 2));
             }
+            // If the observation is outside the max range, penalise it by adding a small weight
             else {
                 weight += std::exp(-0.5 * std::pow(cfg.max_range / cfg.measurement_noise, 2))
                           / (2 * M_PI * std::pow(cfg.measurement_noise, 2));
