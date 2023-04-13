@@ -92,8 +92,9 @@ namespace module::planning {
             // Determine the direction of rotation
             int sign = turn_around_ball.clockwise ? -1 : 1;
             // Turn around the ball
-            emit<Task>(std::make_unique<Walk>(
-                Eigen::Vector3f(cfg.pivot_ball_speed_x, cfg.pivot_ball_speed_y, sign * cfg.pivot_ball_speed)));
+            emit<Task>(std::make_unique<Walk>(Eigen::Vector3f(cfg.pivot_ball_speed_x,
+                                                              -1.0 * sign * cfg.pivot_ball_speed_y,
+                                                              sign * cfg.pivot_ball_speed)));
         });
     }
 }  // namespace module::planning
