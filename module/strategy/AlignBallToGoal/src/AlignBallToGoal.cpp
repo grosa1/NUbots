@@ -23,7 +23,8 @@ namespace module::strategy {
 
         on<Configuration>("AlignBallToGoal.yaml").then([this](const Configuration& config) {
             // Use configuration here from file AlignBallToGoal.yaml
-            this->log_level = config["log_level"].as<NUClear::LogLevel>();
+            this->log_level             = config["log_level"].as<NUClear::LogLevel>();
+            cfg.ball_distance_threshold = config["ball_distance_threshold"].as<float>();
         });
 
         on<Provide<AlignBallToGoalTask>,
@@ -35,7 +36,7 @@ namespace module::strategy {
                 // if the ball is close
                 float distance_to_ball = ball.rBTt.head(2).norm();
                 NUClear::log<NUClear::DEBUG>("distance to ball: ", distance_to_ball);
-                if (distance_to_ball < 1.0f) {
+                if (distance_to_ball < cfg.ball_distance_threshold) {
                     // Get the robot's position (pose) on the field
                     Eigen::Isometry3d Htf = Eigen::Isometry3d(sensors.Htw) * Eigen::Isometry3d(field.Hfw.inverse());
                     // Goal position relative to field
