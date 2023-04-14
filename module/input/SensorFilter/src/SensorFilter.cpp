@@ -112,7 +112,8 @@ namespace module::input {
         });
 
         on<Trigger<Stability>>().then([this](const Stability& stability) {
-            if (stability == Stability::FALLEN) {
+            // standing because that's what it is when it kicks and we want to know that too
+            if (stability == Stability::FALLEN || stability == Stability::STANDING) {
                 falling = true;
             }
             else {

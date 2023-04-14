@@ -13,6 +13,7 @@ namespace module::strategy {
         /// @brief Stores configuration values
         struct Config {
             float ball_distance_threshold = 0.0f;
+            float angle_threshold         = 0.0f;
         } cfg;
 
     public:

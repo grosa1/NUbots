@@ -14,6 +14,7 @@ namespace module::localisation {
 
     using message::behaviour::state::Stability;
     using message::localisation::Field;
+    using message::localisation::ResetRobotLocalisation;
     using message::motion::DisableWalkEngineCommand;
     using message::motion::EnableWalkEngineCommand;
     using message::motion::ExecuteGetup;
@@ -37,16 +38,46 @@ namespace module::localisation {
             cfg.save_map    = config["save_map"].as<bool>();
 
             // Initial state, covariance and process noise
-            state                        = config["initial_state"].as<Expression>();
-            covariance.diagonal()        = Eigen::Vector3d(config["initial_covariance"].as<Expression>());
-            cfg.process_noise.diagonal() = Eigen::Vector3d(config["process_noise"].as<Expression>());
-            cfg.measurement_noise        = config["measurement_noise"].as<double>();
-            cfg.max_range                = config["max_range"].as<double>();
+            cfg.initial_covariance.diagonal() = Eigen::Vector3d(config["initial_covariance"].as<Expression>());
+            cfg.process_noise.diagonal()      = Eigen::Vector3d(config["process_noise"].as<Expression>());
+            cfg.measurement_noise             = config["measurement_noise"].as<double>();
+            cfg.max_range                     = config["max_range"].as<double>();
+
+            // Create vector of search positions
+            for (const auto& initial_state : config["initial_state"].config) {
+                cfg.initial_state.push_back(initial_state.as<Expression>());
+            }
 
             // Initialise the particles with a multivariate normal distribution
-            MultivariateNormal<double, 3> multivariate(state, covariance);
-            for (int i = 0; i < cfg.n_particles; i++) {
-                particles.push_back(Particle(multivariate.sample(), 1.0));
+            state      = cfg.initial_state[0];
+            covariance = cfg.initial_covariance;
+            particles.clear();
+
+            int n_particles_each = cfg.n_particles / cfg.initial_state.size();
+
+            // Loop over initial states and evenly distribute particles
+            for (auto& s : cfg.initial_state) {
+                MultivariateNormal<double, 3> multivariate(s, covariance);
+                for (int i = 0; i < n_particles_each; i++) {
+                    particles.push_back(Particle(multivariate.sample(), 1.0));
+                }
+            }
+        });
+
+        on<Trigger<ResetRobotLocalisation>>().then([this] {
+            // Reset the particles to the initial state
+            state      = cfg.initial_state[0];
+            covariance = cfg.initial_covariance;
+            particles.clear();
+
+            int n_particles_each = cfg.n_particles / cfg.initial_state.size();
+
+            // Loop over initial states and evenly distribute particles
+            for (auto& s : cfg.initial_state) {
+                MultivariateNormal<double, 3> multivariate(s, covariance);
+                for (int i = 0; i < n_particles_each; i++) {
+                    particles.push_back(Particle(multivariate.sample(), 1.0));
+                }
             }
         });
 
@@ -347,7 +378,7 @@ namespace module::localisation {
         }
         double weight_sum = std::accumulate(weights.begin(), weights.end(), 0.0);
         if (weight_sum == 0) {
-            log<NUClear::WARN>("All weights are zero, cannot resample");
+            // log<NUClear::WARN>("All weights are zero, cannot resample");
             // Add some more noise to the particles
             add_noise();
             return;

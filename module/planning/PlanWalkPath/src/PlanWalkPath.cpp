@@ -3,21 +3,26 @@
 #include "extension/Behaviour.hpp"
 #include "extension/Configuration.hpp"
 
+#include "message/actuation/Limbs.hpp"
+#include "message/behaviour/state/Stability.hpp"
 #include "message/localisation/FilteredBall.hpp"
 #include "message/planning/WalkPath.hpp"
 #include "message/skill/Walk.hpp"
 
 #include "utility/math/comparison.hpp"
-
+#include "utility/skill/Script.hpp"
 namespace module::planning {
 
     using extension::Configuration;
 
+    using message::actuation::LimbsSequence;
+    using message::behaviour::state::Stability;
     using message::localisation::FilteredBall;
     using message::planning::TurnAroundBall;
     using message::planning::TurnOnSpot;
     using message::planning::WalkTo;
     using message::skill::Walk;
+    using utility::skill::load_script;
 
     PlanWalkPath::PlanWalkPath(std::unique_ptr<NUClear::Environment> environment)
         : BehaviourReactor(std::move(environment)) {
@@ -44,40 +49,49 @@ namespace module::planning {
         });
 
         // Path to walk to a particular point
-        on<Provide<WalkTo>>().then([this](const WalkTo& walk_to) {
-            Eigen::Vector3f rPRr = walk_to.rPRr;
+        on<Provide<WalkTo>, Uses<LimbsSequence>, With<Stability>>().then(
+            [this](const WalkTo& walk_to, const Uses<LimbsSequence>& stand, const Stability& stability) {
+                // if we just got a new task, we have no idea if we are stable yet (or in annoying zombie in webots)
+                // if (stability == Stability::UNKNOWN && is_stable) {
+                //     log<NUClear::INFO>("Stand!");
+                //     is_stable = false;
+                //     emit<Task>(load_script<LimbsSequence>("Stand.yaml"));
+                //     return;
+                // }
+                // // If we've been flagged as not stable, then see if we are now standing, and if not idle
+                // if (!is_stable) {
+                //     if (stand.done) {
+                //         log<NUClear::INFO>("Done!");
+                //         is_stable = true;
+                //     }
+                //     else {
+                //         emit<Task>(std::make_unique<Idle>());
+                //         return;
+                //     }
+                // }
 
-            // If robot getting close to the ball, begin to decelerate to minimum speed
-            if (rPRr.head(2).norm() < cfg.approach_radius) {
-                speed -= cfg.acceleration;
-                speed = std::max(speed, cfg.min_forward_speed);
-            }
-            else {
-                // If robot is far away from the ball, accelerate to max speed
-                speed += cfg.acceleration;
-                speed = std::max(cfg.min_forward_speed, std::min(speed, cfg.max_forward_speed));
-            }
+                Eigen::Vector3f rPRr = walk_to.rPRr;
 
-            // If robot getting close to the ball, begin to decelerate to minimum speed
-            if (rPRr.head(2).norm() < cfg.approach_radius) {
-                speed -= cfg.acceleration;
-                speed = std::max(speed, cfg.min_forward_speed);
-            }
-            else {
-                // If robot is far away from the ball, accelerate to max speed
-                speed += cfg.acceleration;
-                speed = std::min(speed, cfg.max_forward_speed);
-            }
+                // If robot getting close to the ball, begin to decelerate to minimum speed
+                if (rPRr.head(2).norm() < cfg.approach_radius) {
+                    speed -= cfg.acceleration;
+                    speed = std::max(speed, 2.0f * cfg.min_forward_speed);
+                }
+                else {
+                    // If robot is far away from the ball, accelerate to max speed
+                    speed += cfg.acceleration;
+                    speed = std::max(cfg.min_forward_speed, std::min(speed, cfg.max_forward_speed));
+                }
 
-            // Obtain the unit vector to desired target in robot space and scale by cfg.forward_speed
-            Eigen::Vector3f walk_command = rPRr.normalized() * speed;
+                // Obtain the unit vector to desired target in robot space and scale by cfg.forward_speed
+                Eigen::Vector3f walk_command = rPRr.normalized() * speed;
 
-            // Set the angular velocity component of the walk_command with the angular displacement and saturate with
-            // value cfg.max_turn_speed
-            walk_command.z() = utility::math::clamp(cfg.min_turn_speed, walk_to.heading, cfg.max_turn_speed);
+                // Set the angular velocity component of the walk_command with the angular displacement and saturate
+                // with value cfg.max_turn_speed
+                walk_command.z() = utility::math::clamp(cfg.min_turn_speed, walk_to.heading, cfg.max_turn_speed);
 
-            emit<Task>(std::make_unique<Walk>(walk_command));
-        });
+                emit<Task>(std::make_unique<Walk>(walk_command));
+            });
 
         on<Provide<TurnOnSpot>>().then([this](const TurnOnSpot& turn_on_spot) {
             // Determine the direction of rotation

@@ -6,6 +6,8 @@
 #include "extension/Configuration.hpp"
 
 #include "message/behaviour/state/Stability.hpp"
+#include "message/input/Sensors.hpp"
+#include "message/localisation/Field.hpp"
 #include "message/localisation/FilteredBall.hpp"
 #include "message/planning/KickTo.hpp"
 #include "message/skill/Kick.hpp"
@@ -18,13 +20,14 @@ namespace module::planning {
 
     using extension::Configuration;
     using message::behaviour::state::Stability;
+    using message::input::Sensors;
+    using message::localisation::Field;
     using message::localisation::FilteredBall;
     using message::planning::KickTo;
     using message::skill::Kick;
     using message::skill::Walk;
     using utility::input::LimbID;
     using utility::support::Expression;
-
     PlanKick::PlanKick(std::unique_ptr<NUClear::Environment> environment) : BehaviourReactor(std::move(environment)) {
 
         on<Configuration>("PlanKick.yaml").then([this](const Configuration& config) {
@@ -37,11 +40,13 @@ namespace module::planning {
             cfg.kick_leg                = config["kick_leg"].as<std::string>();
         });
 
-        on<Provide<KickTo>, Uses<Kick>, Trigger<FilteredBall>, Trigger<Stability>>().then(
+        on<Provide<KickTo>, Uses<Kick>, Trigger<FilteredBall>, Trigger<Stability>, With<Field>, With<Sensors>>().then(
             [this](const KickTo& kick_to,
                    const Uses<Kick>& kick,
                    const FilteredBall& ball,
-                   const Stability& stability) {
+                   const Stability& stability,
+                   const Field& field,
+                   const Sensors& sensors) {
                 // If the kick is running, don't interrupt or the robot may fall
                 if (kick.run_state == GroupInfo::RunState::RUNNING && !kick.done) {
                     emit<Task>(std::make_unique<Idle>());
@@ -58,8 +63,8 @@ namespace module::planning {
 
                 // CHECK IF CLOSE TO BALL
                 // Get the angle and distance to the ball
-                float ball_angle    = std::abs(std::atan2(ball.rBRr.y(), ball.rBRr.x()));
-                float ball_distance = ball.rBRr.head(2).norm();
+                float ball_angle    = std::abs(std::atan2(ball.rBTt.y(), ball.rBTt.x()));
+                float ball_distance = ball.rBTt.head(2).norm();
 
                 // Need to be near the ball to consider kicking it
                 if (ball_distance > cfg.ball_distance_threshold || ball_angle > cfg.ball_angle_threshold) {
@@ -67,7 +72,14 @@ namespace module::planning {
                 }
 
                 // CHECK IF FACING POINT TO KICK TO
-                float align_angle = std::abs(std::atan2(kick_to.rPRr.y(), kick_to.rPRr.x()));
+                // Get the robot's position (pose) on the field
+                Eigen::Isometry3d Htf = Eigen::Isometry3d(sensors.Htw) * Eigen::Isometry3d(field.Hfw.inverse());
+                // Goal position relative to field
+                Eigen::Vector3d rGFf(-4.5, 0.0, 0.0);
+                // convert to torso space
+                Eigen::Vector3d rGTt = Htf * rGFf;
+
+                float align_angle = std::abs(std::atan2(rGTt.y(), rGTt.x()));
 
                 // Don't kick if we should align but we're not aligned to the target
                 if (align_angle > cfg.target_angle_threshold) {
@@ -90,7 +102,7 @@ namespace module::planning {
 
                 // If the kick leg is forced left, kick left If the kick leg is auto,
                 // kick with left leg if ball is more to the left
-                if (cfg.kick_leg == LimbID::LEFT_LEG || (cfg.kick_leg == LimbID::UNKNOWN && ball.rBRr.y() > 0.0)) {
+                if (cfg.kick_leg == LimbID::LEFT_LEG || (cfg.kick_leg == LimbID::UNKNOWN && ball.rBTt.y() > 0.0)) {
                     emit<Task>(std::make_unique<Kick>(LimbID::LEFT_LEG));
                 }
                 else {  // kick leg is forced right or ball is more to the right and kick leg is auto

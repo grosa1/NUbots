@@ -7,6 +7,7 @@
 
 #include "message/behaviour/state/Stability.hpp"
 #include "message/input/GameEvents.hpp"
+#include "message/localisation/Field.hpp"
 #include "message/platform/RawSensors.hpp"
 #include "message/purpose/Defender.hpp"
 #include "message/purpose/FindPurpose.hpp"
@@ -14,6 +15,7 @@
 #include "message/purpose/Striker.hpp"
 #include "message/strategy/FallRecovery.hpp"
 #include "message/strategy/StandStill.hpp"
+#include "message/support/GlobalConfig.hpp"
 
 namespace module::purpose {
 
@@ -22,6 +24,7 @@ namespace module::purpose {
     using Unpenalisation = message::input::GameEvents::Unpenalisation;
     using message::behaviour::state::Stability;
     using message::input::GameEvents;
+    using message::localisation::ResetRobotLocalisation;
     using message::platform::ButtonMiddleDown;
     using message::platform::ResetWebotsServos;
     using message::purpose::Defender;
@@ -30,6 +33,7 @@ namespace module::purpose {
     using message::purpose::Striker;
     using message::strategy::FallRecovery;
     using message::strategy::StandStill;
+    using message::support::GlobalConfig;
 
     Soccer::Soccer(std::unique_ptr<NUClear::Environment> environment) : BehaviourReactor(std::move(environment)) {
 
@@ -46,7 +50,7 @@ namespace module::purpose {
         on<Startup>().then([this] {
             // At the start of the program, we should be standing
             // Without this emit, modules that need a Stability message may not run
-            emit(std::make_unique<Stability>(Stability::STANDING));
+            emit(std::make_unique<Stability>(Stability::UNKNOWN));
             // This emit starts the tree to play soccer
             emit<Task>(std::make_unique<FindPurpose>());
             // The robot should always try to recover from falling, if applicable, regardless of purpose
@@ -67,18 +71,21 @@ namespace module::purpose {
             // If the robot is penalised, its purpose doesn't matter anymore, it must stand still
             if (self_penalisation.context == GameEvents::Context::SELF) {
                 emit(std::make_unique<ResetWebotsServos>());
+                emit(std::make_unique<Stability>(Stability::UNKNOWN));
+                emit(std::make_unique<ResetRobotLocalisation>());
                 emit<Task>(std::unique_ptr<FindPurpose>(nullptr));
                 // emit<Task>(std::make_unique<StandStill>());
             }
         });
 
-        on<Trigger<Unpenalisation>>().then([this](const Unpenalisation& self_unpenalisation) {
-            // If the robot is unpenalised, stop standing still and find its purpose
-            if (self_unpenalisation.context == GameEvents::Context::SELF) {
-                // emit<Task>(std::unique_ptr<StandStill>(nullptr));
-                emit<Task>(std::make_unique<FindPurpose>());
-            }
-        });
+        on<Trigger<Unpenalisation>, With<GlobalConfig>>().then(
+            [this](const Unpenalisation& self_unpenalisation, const GlobalConfig& global_config) {
+                // If the robot is unpenalised, stop standing still and find its purpose
+                if (self_unpenalisation.context == GameEvents::Context::SELF) {
+                    // emit<Task>(std::unique_ptr<StandStill>(nullptr));
+                    emit<Task>(std::make_unique<FindPurpose>());
+                }
+            });
 
         on<Trigger<ButtonMiddleDown>, Single>().then([this] {
             // Middle button forces playing

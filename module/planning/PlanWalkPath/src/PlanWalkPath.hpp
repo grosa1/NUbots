@@ -38,7 +38,8 @@ namespace module::planning {
         } cfg;
 
         /// @brief The current speed of the walk command
-        float speed = 0;
+        float speed    = 0;
+        bool is_stable = true;
 
     public:
         /// @brief Called by the powerplant to build and setup the PlanWalkPath reactor.

@@ -3,10 +3,14 @@ nuclear_role(
   extension::FileWatcher
   support::SignalCatcher
   support::logging::ConsoleLogHandler
+  network::PlotJuggler
   # Config
   support::configuration::SoccerConfig
   actuation::KinematicsConfiguration
   support::configuration::GlobalConfig
+  # Network
+  network::NUClearNet
+  network::PlotJuggler
   # Sensors
   input::GameController
   input::SensorFilter
@@ -14,9 +18,13 @@ nuclear_role(
   # Vision
   vision::VisualMesh
   vision::GreenHorizonDetector
+  vision::GoalDetector
   vision::BallDetector
+  vision::FieldLineDetector
   # Localisation
+  localisation::RobotLocalisation
   localisation::BallFilter
+  localisation::RobotLocalisation
   # Director
   extension::Director
   # Servos
@@ -27,7 +35,6 @@ nuclear_role(
   skill::ScriptKick
   skill::GetUp
   skill::Look
-  skill::Dive
   # Planners
   planning::PlanWalkPath
   planning::PlanLook
@@ -39,9 +46,13 @@ nuclear_role(
   strategy::StandStill
   strategy::StrategiseLook
   strategy::WalkToBall
+  strategy::WalkToFieldPosition
+  strategy::FindObject
   strategy::FindObject
   strategy::Ready
   strategy::DiveToBall
+  strategy::AlignBallToGoal
+  strategy::KickToGoal
   # Purposes
   purpose::Striker
   purpose::Soccer
